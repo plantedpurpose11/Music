@@ -8,7 +8,7 @@ const libsodium = require("libsodium-wrappers");
 const ffmpeg = require("ffmpeg-static");
 const voice = require("@discordjs/voice");
 const DisTube = require("distube").default;
-const https = require('https-proxy-agent');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 const client = new Discord.Client({
     fetchAllMembers: false,
     //restTimeOffset: 0,
@@ -49,7 +49,7 @@ const client = new Discord.Client({
 //BOT CODED BY: Tomato#6966
 //DO NOT SHARE WITHOUT CREDITS!
 const proxy = 'http://123.123.123.123:8080';
-const agent = https(proxy);
+const agent = new HttpsProxyAgent(proxy);
 const { SpotifyPlugin } = require("@distube/spotify");
 const { SoundCloudPlugin } = require("@distube/soundcloud");
 let spotifyoptions = {
