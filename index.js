@@ -1,3 +1,9 @@
+// Polyfill globalThis.crypto for Node.js < 19 (serialize-javascript v7 needs it)
+if (typeof globalThis.crypto === 'undefined') {
+    const { webcrypto } = require('crypto');
+    globalThis.crypto = webcrypto;
+}
+
 const Discord = require("discord.js");
 const config = require(`./botconfig/config.json`);
 const settings = require(`./botconfig/settings.json`);
