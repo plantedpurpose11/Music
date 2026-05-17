@@ -1,8 +1,57 @@
-// Polyfill globalThis.crypto for Node.js < 19 (serialize-javascript v7 needs it)
-if (typeof globalThis.crypto === 'undefined') {
-    const { webcrypto } = require('crypto');
-    globalThis.crypto = webcrypto;
-}
+// Polyfill Web API globals for Node.js < 18/19
+// Required by undici (used by @distube/ytdl-core) and serialize-javascript
+(function() {
+    // crypto (global since Node 19)
+    if (typeof globalThis.crypto === 'undefined') {
+        try { globalThis.crypto = require('crypto').webcrypto; } catch {}
+    }
+    // Web Streams (global since Node 18)
+    if (typeof globalThis.ReadableStream === 'undefined') {
+        try {
+            const streams = require('stream/web');
+            globalThis.ReadableStream = streams.ReadableStream;
+            globalThis.WritableStream = streams.WritableStream;
+            globalThis.TransformStream = streams.TransformStream;
+        } catch {}
+    }
+    // Blob (global since Node 18)
+    if (typeof globalThis.Blob === 'undefined') {
+        try { globalThis.Blob = require('buffer').Blob; } catch {}
+    }
+    // File (global since Node 20)
+    if (typeof globalThis.File === 'undefined') {
+        try { globalThis.File = require('buffer').File; } catch {
+            // Node < 20: minimal shim
+            if (typeof globalThis.Blob !== 'undefined') {
+                globalThis.File = class File extends globalThis.Blob {
+                    constructor(parts, name, opts = {}) {
+                        super(parts, opts);
+                        this.name = name;
+                        this.lastModified = opts.lastModified || Date.now();
+                    }
+                };
+            }
+        }
+    }
+    // structuredClone (global since Node 17)
+    if (typeof globalThis.structuredClone === 'undefined') {
+        try {
+            const { deserialize, serialize } = require('v8');
+            globalThis.structuredClone = (val) => deserialize(serialize(val));
+        } catch {}
+    }
+    // fetch, Headers, Request, Response, FormData (global since Node 18)
+    if (typeof globalThis.fetch === 'undefined') {
+        try {
+            const undici = require('undici');
+            globalThis.fetch = undici.fetch;
+            globalThis.Headers = undici.Headers;
+            globalThis.Request = undici.Request;
+            globalThis.Response = undici.Response;
+            globalThis.FormData = undici.FormData;
+        } catch {}
+    }
+})();
 
 const Discord = require("discord.js");
 const config = require(`./botconfig/config.json`);
@@ -54,8 +103,9 @@ const client = new Discord.Client({
 });
 //BOT CODED BY: Tomato#6966
 //DO NOT SHARE WITHOUT CREDITS!
-const proxy = 'http://123.123.123.123:8080';
-const agent = new HttpsProxyAgent(proxy);
+// Only use proxy if configured via PROXY_URL env var
+const proxyUrl = process.env.PROXY_URL;
+const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
 const { SpotifyPlugin } = require("@distube/spotify");
 const { SoundCloudPlugin } = require("@distube/soundcloud");
 let spotifyoptions = {
@@ -81,9 +131,7 @@ client.distube = new DisTube(client, {
   nsfw: false, //Set it to false if u want to disable nsfw songs
   emptyCooldown: 25,
   ytdlOptions: {
-    requestOptions: {
-      agent
-    },
+    ...(agent ? { requestOptions: { agent } } : {}),    
     highWaterMark: 1024 * 1024 * 64,
     quality: "highestaudio",
     format: "audioonly",
@@ -120,7 +168,12 @@ client.autoresume = new Enmap({ name: "autoresume", dataDir: "./databases/infos"
         require(`./handlers/${h}`)(client);
     })
 //Start the Bot
-client.login(config.token)
+const botToken = process.env.DISCORD_TOKEN || config.token;
+if (!botToken) {
+    console.error("No bot token found! Set DISCORD_TOKEN env var or add token to botconfig/config.json");
+    process.exit(1);
+}
+client.login(botToken)
 
 /**
  * @INFO

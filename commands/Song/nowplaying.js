@@ -78,7 +78,7 @@ module.exports = {
 						.addField(`↪️ Autoplay:`, `>>> ${newQueue.autoplay ? `${client.allEmojis.check_mark}` : `${client.allEmojis.x}`}`, true)
 						.addField(`❔ Download Song:`, `>>> [\`Click here\`](${newTrack.streamURL})`, true)
 						.addField(`❔ Filter${newQueue.filters.length > 0 ? "s": ""}:`, `>>> ${newQueue.filters && newQueue.filters.length > 0 ? `${newQueue.filters.map(f=>`\`${f}\``).join(`, `)}` : `${client.allEmojis.x}`}`, newQueue.filters.length > 1 ? false : true)
-						.addField(`<:Youtube:840260133686870036>  View${newTrack.views > 0 ? "s": ""}:`, `>>> \`${newTrack.views}\``, true)
+						.addField(`▶️  View${newTrack.views > 0 ? "s": ""}:`, `>>> \`${newTrack.views}\``, true)
 						.addField(`:thumbsup: Like${newTrack.likes > 0 ? "s": ""}:`, `>>> \`${newTrack.likes}\``, true)
 						.addField(`:thumbsdown: Dislike${newTrack.dislikes > 0 ? "s": ""}:`, `>>> \`${newTrack.dislikes}\``, true)
 						.setThumbnail(`https://img.youtube.com/vi/${newTrack.id}/mqdefault.jpg`)

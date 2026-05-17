@@ -211,7 +211,7 @@ function onCoolDown(message, command) {
       if(!client || !message) return reject("CLIENT IS NOT DEFINED")
       if(!args || args == null || args == undefined) args = message.content.trim().split(/ +/).slice(1);
       let user = message.mentions.users.first();
-      if(!user && args[0] && args[0].length == 18) {
+      if(!user && args[0] && args[0].length >= 17 && /^\d+$/.test(args[0])) {
         user = await client.users.fetch(args[0])
         if(!user) return reject(errormessage)
         return resolve(user);
@@ -250,7 +250,7 @@ function onCoolDown(message, command) {
       if(!client || !message) return reject("CLIENT IS NOT DEFINED")
       if(!args || args == null || args == undefined) args = message.content.trim().split(/ +/).slice(1);
       let user = message.mentions.roles.filter(role=>role.guild.id==message.guild.id).first();
-      if(!user && args[0] && args[0].length == 18) {
+      if(!user && args[0] && args[0].length >= 17 && /^\d+$/.test(args[0])) {
         user = message.guild.roles.cache.get(args[0])
         if(!user) return reject(errormessage)
         return resolve(user);
@@ -284,7 +284,7 @@ function onCoolDown(message, command) {
       if(!client || !message) return reject("CLIENT IS NOT DEFINED")
       if(!args || args == null || args == undefined) args = message.content.trim().split(/ +/).slice(1);
       let user = message.mentions.users.first();
-      if(!user && args[0] && args[0].length == 18) {
+      if(!user && args[0] && args[0].length >= 17 && /^\d+$/.test(args[0])) {
         user = await client.users.fetch(args[0])
         if(!user) return reject(errormessage)
         return resolve(user);
@@ -652,7 +652,7 @@ function onCoolDown(message, command) {
      //array of all embeds, here simplified just 10 embeds with numbers 0 - 9
      collector.on('collect', async b => {
          if(b.user.id !== message.author.id)
-           return b.reply(`<:declined:780403017160982538> **Only the one who typed ${prefix}help is allowed to react!**`, true)
+           return b.reply(`❌ **Only the one who typed ${prefix}help is allowed to react!**`, true)
            //page forward
            if(b.customId == "1") {
              //b.reply("***Swapping a PAGE FORWARD***, *please wait 2 Seconds for the next Input*", true)
@@ -711,7 +711,7 @@ function onCoolDown(message, command) {
      //array of all embeds, here simplified just 10 embeds with numbers 0 - 9
      collector.on('collect', async b => {
          if(b.user.id !== message.author.id)
-           return b.reply(`<:declined:780403017160982538> **Only the one who typed ${prefix}help is allowed to react!**`, true)
+           return b.reply(`❌ **Only the one who typed ${prefix}help is allowed to react!**`, true)
            //page forward
            if(b.customId == "1") {
              //b.reply("***Swapping a PAGE FORWARD***, *please wait 2 Seconds for the next Input*", true)
