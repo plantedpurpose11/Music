@@ -4,6 +4,7 @@
     "@discordjs/voice": "^0.19.2",
     "@distube/soundcloud": "^1.0.0",
     "@distube/spotify": "^1.0.0",
+    "@distube/youtube-dl": "^2.2.4",
     "@distube/ytsr": "^2.0.4",
     "colors": "^1.4.0",
     "cpu-stat": "^2.0.1",
