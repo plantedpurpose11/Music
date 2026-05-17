@@ -33,6 +33,18 @@
             }
         }
     }
+    // DOMException (global since Node 17)
+    if (typeof globalThis.DOMException === 'undefined') {
+        try { globalThis.DOMException = require('domexception'); } catch {
+            globalThis.DOMException = class DOMException extends Error {
+                constructor(message, name) {
+                    super(message);
+                    this.name = name || 'DOMException';
+                    this.code = 0;
+                }
+            };
+        }
+    }
     // structuredClone (global since Node 17)
     if (typeof globalThis.structuredClone === 'undefined') {
         try {
