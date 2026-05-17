@@ -18,9 +18,12 @@ const BotEmbed = require("../botconfig/embed.json");
  * @param {*} client THE DISCORD BOT CLIENT 
  */
 module.exports = client => {
-    //Start teh website
-    console.log("Loading DashBoard settings".brigthGreen)
     const settings = require("./settings.json");
+    if (!settings.config.clientID || !settings.config.secret) {
+        console.log("[Dashboard] Skipped — clientID/secret not configured in dashboard/settings.json");
+        return;
+    }
+    console.log("Loading DashBoard settings".brightGreen);
     // We instantiate express app and the session store.
     const app = express();
     const httpApp = express();
