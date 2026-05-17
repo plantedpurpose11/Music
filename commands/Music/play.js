@@ -18,33 +18,16 @@ module.exports = {
 	alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL]
 	run: async (client, message, args) => {
 		try {
-			//console.log(interaction, StringOption)
+			const { member, channelId, guildId } = message;
+			const { guild } = member;
+			const { channel } = member.voice;
 
-			//things u can directly access in an interaction!
-			const {
-				member,
-				channelId,
-				guildId,
-				applicationId,
-				commandName,
-				deferred,
-				replied,
-				ephemeral,
-				options,
-				id,
-				createdTimestamp
-			} = message;
-			const {
-				guild
-			} = member;
-			const {
-				channel
-			} = member.voice;
 			if (!channel) return message.reply({
 				embeds: [
 					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
 				],
 			})
+			
 			if (channel.userLimit != 0 && channel.full)
 				return message.reply({
 					embeds: [new MessageEmbed()
@@ -53,6 +36,7 @@ module.exports = {
 						.setTitle(`${client.allEmojis.x} Your Voice Channel is full, I can't join!`)
 					],
 				});
+				
 			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
 				return message.reply({
 					embeds: [new MessageEmbed()
@@ -62,6 +46,7 @@ module.exports = {
 					],
 				});
 			}
+			
 			if (!args[0]) {
 				return message.reply({
 					embeds: [new MessageEmbed()
@@ -72,24 +57,59 @@ module.exports = {
 					],
 				});
 			}
-			//let IntOption = options.getInteger("OPTIONNAME"); //same as in IntChoices //RETURNS NUMBER
-			const Text = args.join(" ") //same as in StringChoices //RETURNS STRING 
-			//update it without a response!
+
+			const Text = args.join(" ");
 			let newmsg = await message.reply({
 				content: `🔍 Searching... \`\`\`${Text}\`\`\``,
 			}).catch(e => {
 				console.log(e)
 			})
+
 			try {
-				let queue = client.distube.getQueue(guildId)
-				let options = {
-					member: member,
+				// Get or create player
+				let player = client.manager?.players?.get(guildId);
+				
+				if (!player) {
+					player = client.manager.createPlayer(guildId);
+					player.connect(channel.id, { deafen: true });
 				}
-				if (!queue) options.textChannel = guild.channels.cache.get(channelId)
-				await client.distube.play(channel, Text, options)
-				//Edit the reply
+				
+				// Search for tracks using Lavalink node
+				const node = client.manager.nodes.first();
+				if (!node) {
+					return message.reply({
+						content: `${client.allEmojis.x} No Lavalink node available!`,
+						embeds: []
+					});
+				}
+				
+				// Search for the track
+				const result = await node.search(Text);
+				
+				if (!result.tracks || result.tracks.length === 0) {
+					return message.reply({
+						content: `${client.allEmojis.x} No tracks found!`,
+						embeds: []
+					});
+				}
+				
+				const track = result.tracks[0];
+				track.requester = member;
+				
+				// Add to queue
+				player.queue.push(track);
+				
+				// Store text channel for now playing messages
+				player.textChannel = channelId;
+				
+				// If not playing, start playing
+				if (!player.playing) {
+					player.play(track);
+				}
+				
+				// Update the message
 				newmsg.edit({
-					content: `${queue?.songs?.length > 0 ? "👍 Added" : "🎶 Now Playing"}: \`\`\`css\n${Text}\n\`\`\``,
+					content: `${player.queue.length > 1 ? "👍 Added" : "🎶 Now Playing"}: \`\`\`css\n${Text}\n\`\`\``,
 				}).catch(e => {
 					console.log(e)
 				})
@@ -101,7 +121,6 @@ module.exports = {
 						new MessageEmbed().setColor(ee.wrongcolor)
 						.setDescription(`\`\`\`${e}\`\`\``)
 					],
-
 				})
 			}
 		} catch (e) {
@@ -112,9 +131,6 @@ module.exports = {
 /**
  * @INFO
  * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * @INFO
- * Work for Milrato Development | https://milrato.eu
- * @INFO
- * Please mention Him / Milrato Development, when using this Code!
+ * Migrated to use Lavalink
  * @INFO
  */

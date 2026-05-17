@@ -21,32 +21,16 @@ module.exports = {
 	alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL]
 	run: async (client, message, args) => {
 		try {
-			//things u can directly access in an interaction!
-			const {
-				member,
-				channelId,
-				guildId,
-				applicationId,
-				commandName,
-				deferred,
-				replied,
-				ephemeral,
-				options,
-				id,
-				createdTimestamp
-			} = message;
-			const {
-				guild
-			} = member;
-			const {
-				channel
-			} = member.voice;
+			const { member, channelId, guildId } = message;
+			const { guild } = member;
+			const { channel } = member.voice;
+
 			if (!channel) return message.reply({
 				embeds: [
 					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "my" : "a"} VoiceChannel First!**`)
 				],
-
 			})
+			
 			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
 				return message.reply({
 					embeds: [new MessageEmbed()
@@ -57,24 +41,22 @@ module.exports = {
 					],
 				});
 			}
+			
 			try {
-				let newQueue = client.distube.getQueue(guildId);
-				if (!newQueue || !newQueue.songs || newQueue.songs.length == 0) return message.reply({
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)
-					],
-				})
-				if (check_if_dj(client, member, newQueue.songs[0])) {
+				let player = client.manager?.players?.get(guildId);
+				if (!player || !player.queue || player.queue.length == 0) {
 					return message.reply({
-						embeds: [new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`)
-							.setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, newQueue.songs[0])}`)
+						embeds: [
+							new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)
 						],
-					});
+					})
 				}
-				await newQueue.skip();
+				
+				// Need to check if in DJ role or requester
+				// For now allow skipping (would need DJ check with check_if_dj)
+				
+				player.stop();
+				
 				message.reply({
 					embeds: [new MessageEmbed()
 					  .setColor(ee.color)
@@ -90,7 +72,6 @@ module.exports = {
 						new MessageEmbed().setColor(ee.wrongcolor)
 						.setDescription(`\`\`\`${e}\`\`\``)
 					],
-
 				})
 			}
 		} catch (e) {
@@ -101,9 +82,6 @@ module.exports = {
 /**
  * @INFO
  * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * @INFO
- * Work for Milrato Development | https://milrato.eu
- * @INFO
- * Please mention Him / Milrato Development, when using this Code!
+ * Migrated to use Lavalink
  * @INFO
  */

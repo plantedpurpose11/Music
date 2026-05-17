@@ -22,32 +22,16 @@ module.exports = {
 	alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL]
 	run: async (client, message, args) => {
 		try {
-			//things u can directly access in an interaction!
-			const {
-				member,
-				channelId,
-				guildId,
-				applicationId,
-				commandName,
-				deferred,
-				replied,
-				ephemeral,
-				options,
-				id,
-				createdTimestamp
-			} = message;
-			const {
-				guild
-			} = member;
-			const {
-				channel
-			} = member.voice;
+			const { member, channelId, guildId } = message;
+			const { guild } = member;
+			const { channel } = member.voice;
+
 			if (!channel) return message.reply({
 				embeds: [
 					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
 				],
-
 			})
+			
 			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
 				return message.reply({
 					embeds: [new MessageEmbed()
@@ -58,40 +42,56 @@ module.exports = {
 					],
 				});
 			}
+			
 			try {
-				let newQueue = client.distube.getQueue(guildId);
-				if (!newQueue || !newQueue.songs || newQueue.songs.length == 0) return message.reply({
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)
-					],
+				let player = client.manager?.players?.get(guildId);
+				if (!player || !player.queue || player.queue.length == 0) {
+					return message.reply({
+						embeds: [
+							new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)
+						],
+					})
+				}
 
-				})
 				let embeds = [];
 				let k = 10;
-				let theSongs = newQueue.songs;
+				let theSongs = player.queue;
+				
+				// Current playing track
+				let currentInfo = "";
+				if (player.queue[0]) {
+					currentInfo = `**(0) Current Song:**\n> [\`${player.queue[0].title.replace(/\[/igu, "{").replace(/\]/igu, "}")}\`](${player.queue[0].uri})\n`;
+				}
+				
 				//defining each Pages
 				for (let i = 0; i < theSongs.length; i += 10) {
 					let qus = theSongs;
 					const current = qus.slice(i, k)
 					let j = i;
-					const info = current.map((track) => `**${j++} -** [\`${String(track.name).replace(/\[/igu, "{").replace(/\]/igu, "}").substr(0, 60)}\`](${track.url}) - \`${track.formattedDuration}\``).join("\n")
+					const info = current.map((track) => `**${j++} -** [\`${String(track.title).replace(/\[/igu, "{").replace(/\]/igu, "}").substr(0, 60)}\`](${track.uri}) - \`${client.formatDuration(track.duration)}\``).join("\n")
 					const embed = new MessageEmbed()
 						.setColor(ee.color)
 						.setDescription(`${info}`)
 					if (i < 10) {
 						embed.setTitle(`📑 **Top ${theSongs.length > 50 ? 50 : theSongs.length} | Queue of ${guild.name}**`)
-						embed.setDescription(`**(0) Current Song:**\n> [\`${theSongs[0].name.replace(/\[/igu, "{").replace(/\]/igu, "}")}\`](${theSongs[0].url})\n\n${info}`)
+						embed.setDescription(`${currentInfo}\n${info}`)
 					}
 					embeds.push(embed);
-					k += 10; //Raise k to 10
+					k += 10;
 				}
+				
+				// Total duration
+				let totalDuration = theSongs.reduce((acc, track) => acc + (track.duration || 0), 0);
+				
 				embeds[embeds.length - 1] = embeds[embeds.length - 1]
-					.setFooter({ text: ee.footertext + `\n${theSongs.length} Songs in the Queue | Duration: ${newQueue.formattedDuration}`, iconURL: ee.footericon })
+					.setFooter({ text: ee.footertext + `\n${theSongs.length} Songs in the Queue | Duration: ${client.formatDuration(totalDuration)}`, iconURL: ee.footericon })
+				
 				let pages = []
 				for (let i = 0; i < embeds.length; i += 3) {
 					pages.push(embeds.slice(i, i + 3));
 				}
 				pages = pages.slice(0, 24)
+				
 				const Menu = new MessageSelectMenu()
 					.setCustomId("QUEUEPAGES")
 					.setPlaceholder("Select a Page")
@@ -109,6 +109,7 @@ module.exports = {
 					embeds: [embeds[0]],
 					components: [row],
 				});
+				
 				//Event
 				client.on('interactionCreate', (i) => {
 					if (!i.isSelectMenu()) return;
@@ -126,7 +127,6 @@ module.exports = {
 						new MessageEmbed().setColor(ee.wrongcolor)
 						.setDescription(`\`\`\`${e}\`\`\``)
 					],
-
 				})
 			}
 		} catch (e) {
@@ -137,9 +137,6 @@ module.exports = {
 /**
  * @INFO
  * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * @INFO
- * Work for Milrato Development | https://milrato.eu
- * @INFO
- * Please mention Him / Milrato Development, when using this Code!
+ * Migrated to use Lavalink
  * @INFO
  */
