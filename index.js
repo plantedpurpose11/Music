@@ -160,7 +160,6 @@ const proxyUrl = process.env.PROXY_URL;
 const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
 const { SpotifyPlugin } = require("@distube/spotify");
 const { SoundCloudPlugin } = require("@distube/soundcloud");
-const ytdl = require("@distube/ytdl-core");
 
 let spotifyoptions = {
   parallel: true,
@@ -184,7 +183,6 @@ client.distube = new DisTube(client, {
   youtubeCookie: config.youtubeCookie,     //Comment this line if you dont want to use a youtube Cookie 
   nsfw: false, //Set it to false if u want to disable nsfw songs
   emptyCooldown: 25,
-  ytdl: ytdl,  // Use updated @distube/ytdl-core instead of bundled one
   ytdlOptions: {
     ...(agent ? { requestOptions: { agent } } : {}),    
     highWaterMark: 1024 * 1024 * 64,
@@ -192,6 +190,12 @@ client.distube = new DisTube(client, {
     format: "audioonly",
     liveBuffer: 60000,
     dlChunkSize: 1024 * 1024 * 4,
+    requestOptions: {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+      }
+    }
   },
   youtubeDL: true,
   updateYouTubeDL: true,
