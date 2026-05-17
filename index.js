@@ -160,7 +160,6 @@ const proxyUrl = process.env.PROXY_URL;
 const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
 const { SpotifyPlugin } = require("@distube/spotify");
 const { SoundCloudPlugin } = require("@distube/soundcloud");
-const ytdlDefault = require("distube/node_modules/ytdl-core");
 const ytdl = require("@distube/ytdl-core");
 
 let spotifyoptions = {
