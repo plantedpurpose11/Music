@@ -40,7 +40,7 @@ module.exports = {
       message.reply({
         embeds: [new MessageEmbed()
           .setColor(ee.color)
-          .setFooter(ee.footertext, ee.footericon)
+          .setFooter({ text: ee.footertext, iconURL: ee.footericon })
           .setTitle(`:white_check_mark: **${client.user.username}** is since:\n ${duration(client.uptime).map(t=>`\`${t}\``).join(", ")} online`)
         ]
       });

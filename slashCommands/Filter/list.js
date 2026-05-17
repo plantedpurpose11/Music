@@ -41,8 +41,8 @@ module.exports = {
           embeds: [
             new MessageEmbed()
             .setColor(ee.wrongcolor)
-            .setFooter(ee.footertext, ee.footericon)
-            .addField("**All available Filters:**", Object.keys(FiltersSettings).map(f => `\`${f}\``).join(", ") + "\n\n**Note:**\n> *All filters, starting with custom are having there own Command, please use them to define what custom amount u want!*")
+            .setFooter({ text: ee.footertext, iconURL: ee.footericon })
+            .addFields({ name: "**All available Filters:**", value: Object.keys(FiltersSettings).map(f => `\`${f}\``).join(", ") + "\n\n**Note:**\n> *All filters, starting with custom are having there own Command, please use them to define what custom amount u want!*" })
           ],
           ephemeral: true
         })
@@ -50,9 +50,9 @@ module.exports = {
           embeds: [
             new MessageEmbed()
             .setColor(ee.wrongcolor)
-            .setFooter(ee.footertext, ee.footericon)
-            .addField("**All available Filters:**", Object.keys(FiltersSettings).map(f => `\`${f}\``).join(", ") + "\n\n**Note:**\n> *All filters, starting with custom are having there own Command, please use them to define what custom amount u want!*")
-            .addField("**All __current__ Filters:**", newQueue.filters.map(f => `\`${f}\``).join(", "))
+            .setFooter({ text: ee.footertext, iconURL: ee.footericon })
+            .addFields({ name: "**All available Filters:**", value: Object.keys(FiltersSettings).map(f => `\`${f}\``).join(", ") + "\n\n**Note:**\n> *All filters, starting with custom are having there own Command, please use them to define what custom amount u want!*" })
+            .addFields({ name: "**All __current__ Filters:**", value: newQueue.filters.map(f => `\`${f}\``).join(", ") })
           ],
         })
       } catch (e) {

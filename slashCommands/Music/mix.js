@@ -66,7 +66,7 @@ blues, oldgaming, pop, remixes, rock, strange-fruits-gaming
 			} = member.voice;
 			if (!channel) return interaction.reply({
 				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
+					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
 				],
 				ephemeral: true
 			})
@@ -74,16 +74,16 @@ blues, oldgaming, pop, remixes, rock, strange-fruits-gaming
 				return interaction.reply({
 					embeds: [new MessageEmbed()
 						.setColor(ee.wrongcolor)
-						.setFooter(ee.footertext, ee.footericon)
+						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 						.setTitle(`❌ Your Voice Channel is full, I can't join!`)
 					],
 					ephemeral: true
 				});
-			if (channel.guild.me.voice.channel && channel.guild.me.voice.channel.id != channel.id) {
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
 				return interaction.reply({
 					embeds: [new MessageEmbed()
 						.setColor(ee.wrongcolor)
-						.setFooter(ee.footertext, ee.footericon)
+						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 						.setTitle(`❌ I am already connected somewhere else`)
 					],
 					ephemeral: true
@@ -133,7 +133,7 @@ blues, oldgaming, pop, remixes, rock, strange-fruits-gaming
 					member: member,
 				}
 				if (!queue) options.textChannel = guild.channels.cache.get(channelId)
-				await client.distube.playVoiceChannel(channel, link, options)
+				await client.distube.play(channel, link, options)
 				//Edit the reply
 				interaction.editReply({
 					content: `${queue?.songs?.length > 0 ? "👍 Loaded" : "🎶 Now Playing"}: the **'${args[0] ? args[0] : "Default"}'**`,

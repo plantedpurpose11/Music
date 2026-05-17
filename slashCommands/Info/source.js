@@ -34,7 +34,7 @@ module.exports = {
         ephemeral: true,
         embeds: [
           new MessageEmbed().setColor(ee.color)
-          .setFooter(ee.footertext, ee.footericon)
+          .setFooter({ text: ee.footertext, iconURL: ee.footericon })
           .setDescription(`**WHEN YOU USE THE SOURCE CODE, __GIVE CREDITS__!** :heart:\n\n[Link to Source](https://github.com/Tomato6966/Musicium)\n\n[Youtube Tutorial]()`)
         ]
       });
