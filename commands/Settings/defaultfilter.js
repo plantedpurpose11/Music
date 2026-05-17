@@ -30,10 +30,10 @@ module.exports = {
           embeds: [
             new MessageEmbed()
             .setColor(ee.wrongcolor)
-            .setFooter(ee.footertext, ee.footericon)
+            .setFooter({ text: ee.footertext, iconURL: ee.footericon })
             .setTitle(`${client.allEmojis.x} **You added at least one Filter, which is invalid!**`)
             .setDescription("**To define Multiple Filters add a SPACE (` `) in between!**")
-            .addField("**All Valid Filters:**", Object.keys(filters).map(f => `\`${f}\``).join(", "))
+            .addFields({ name: "**All Valid Filters:**", value: Object.keys(filters).map(f => `\`${f}\``).join(", ") })
           ],
         })
       }
@@ -43,7 +43,7 @@ module.exports = {
         embeds: [
           new MessageEmbed()
           .setColor(ee.color)
-          .setFooter(ee.footertext, ee.footericon)
+          .setFooter({ text: ee.footertext, iconURL: ee.footericon })
           .setTitle(`${client.allEmojis.check_mark} **The new Default-Filter${args.length > 1 ? "s are": " is"}:**`)
           .setDescription(`${newfilters}`)
         ],

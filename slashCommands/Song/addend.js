@@ -38,17 +38,17 @@ module.exports = {
 			} = member.voice;
 			if (!channel) return interaction.reply({
 				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
+					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
 				],
 				ephemeral: true
 			})
-			if (channel.guild.me.voice.channel && channel.guild.me.voice.channel.id != channel.id) {
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
 				return interaction.reply({
 					embeds: [new MessageEmbed()
 						.setColor(ee.wrongcolor)
-						.setFooter(ee.footertext, ee.footericon)
+						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 						.setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`)
-						.setDescription(`<#${guild.me.voice.channel.id}>`)
+						.setDescription(`<#${guild.members.me.voice.channel.id}>`)
 					],
 					ephemeral: true
 				});
@@ -61,7 +61,7 @@ module.exports = {
 					],
 					ephemeral: true
 				})
-				await client.distube.playVoiceChannel(channel, newQueue.songs[0].url)
+				await client.distube.play(channel, newQueue.songs[0].url)
 			} catch (e) {
 				console.log(e.stack ? e.stack : e)
 				interaction.editReply({

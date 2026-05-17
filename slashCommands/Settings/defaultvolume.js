@@ -57,7 +57,7 @@ module.exports = {
           embeds: [
             new MessageEmbed()
             .setColor(ee.wrongcolor)
-            .setFooter(ee.footertext, ee.footericon)
+            .setFooter({ text: ee.footertext, iconURL: ee.footericon })
             .setTitle(`${client.allEmojis.x} **The Volume __must__ be between \`1\` and \`150\`!**`)
           ],
         })
@@ -68,7 +68,7 @@ module.exports = {
         embeds: [
           new MessageEmbed()
           .setColor(ee.color)
-          .setFooter(ee.footertext, ee.footericon)
+          .setFooter({ text: ee.footertext, iconURL: ee.footericon })
           .setTitle(`${client.allEmojis.check_mark} **The Default-Volume has been set to: \`${volume}\`!**`)
         ],
       })

@@ -42,22 +42,22 @@ module.exports = {
 			} = member.voice;
 			if (!channel) return message.reply({
 				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
+					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
 				],
 			})
 			if (channel.userLimit != 0 && channel.full)
 				return message.reply({
 					embeds: [new MessageEmbed()
 						.setColor(ee.wrongcolor)
-						.setFooter(ee.footertext, ee.footericon)
+						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 						.setTitle(`${client.allEmojis.x} Your Voice Channel is full, I can't join!`)
 					],
 				});
-			if (channel.guild.me.voice.channel && channel.guild.me.voice.channel.id != channel.id) {
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
 				return message.reply({
 					embeds: [new MessageEmbed()
 						.setColor(ee.wrongcolor)
-						.setFooter(ee.footertext, ee.footericon)
+						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 						.setTitle(`${client.allEmojis.x} I am already connected somewhere else`)
 					],
 				});
@@ -66,7 +66,7 @@ module.exports = {
 				return message.reply({
 					embeds: [new MessageEmbed()
 						.setColor(ee.wrongcolor)
-						.setFooter(ee.footertext, ee.footericon)
+						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 						.setTitle(`${client.allEmojis.x} **Please add a Search Query!**`)
 						.setDescription(`**Usage:**\n> \`${client.settings.get(message.guild.id, "prefix")}play <Search/Link>\``)
 					],
@@ -86,7 +86,7 @@ module.exports = {
 					member: member,
 				}
 				if (!queue) options.textChannel = guild.channels.cache.get(channelId)
-				await client.distube.playVoiceChannel(channel, Text, options)
+				await client.distube.play(channel, Text, options)
 				//Edit the reply
 				newmsg.edit({
 					content: `${queue?.songs?.length > 0 ? "👍 Added" : "🎶 Now Playing"}: \`\`\`css\n${Text}\n\`\`\``,

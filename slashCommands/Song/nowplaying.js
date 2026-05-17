@@ -38,17 +38,17 @@ module.exports = {
 			} = member.voice;
 			if (!channel) return interaction.reply({
 				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
+					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
 				],
 				ephemeral: true
 			})
-			if (channel.guild.me.voice.channel && channel.guild.me.voice.channel.id != channel.id) {
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
 				return interaction.reply({
 					embeds: [new MessageEmbed()
 						.setColor(ee.wrongcolor)
-						.setFooter(ee.footertext, ee.footericon)
+						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 						.setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`)
-						.setDescription(`<#${guild.me.voice.channel.id}>`)
+						.setDescription(`<#${guild.members.me.voice.channel.id}>`)
 					],
 					ephemeral: true
 				});
@@ -68,21 +68,21 @@ module.exports = {
 						new MessageEmbed().setColor(ee.color)
 						.setTitle(newTrack.name)
 						.setURL(newTrack.url)
-						.addField(`💡 Requested by:`, `>>> ${newTrack.user}`, true)
-						.addField(`⏱ Duration:`, `>>> \`${newQueue.formattedCurrentTime} / ${newTrack.formattedDuration}\``, true)
-						.addField(`🌀 Queue:`, `>>> \`${newQueue.songs.length} song(s)\`\n\`${newQueue.formattedDuration}\``, true)
-						.addField(`🔊 Volume:`, `>>> \`${newQueue.volume} %\``, true)
-						.addField(`♾ Loop:`, `>>> ${newQueue.repeatMode ? newQueue.repeatMode === 2 ? `${client.allEmojis.check_mark} \`Queue\`` : `${client.allEmojis.check_mark} \`Song\`` : `${client.allEmojis.x}`}`, true)
-						.addField(`↪️ Autoplay:`, `>>> ${newQueue.autoplay ? `${client.allEmojis.check_mark}` : `${client.allEmojis.x}`}`, true)
-						.addField(`❔ Download Song:`, `>>> [\`Click here\`](${newTrack.streamURL})`, true)
-						.addField(`❔ Filter${newQueue.filters.length > 0 ? "s": ""}:`, `>>> ${newQueue.filters && newQueue.filters.length > 0 ? `${newQueue.filters.map(f=>`\`${f}\``).join(`, `)}` : `${client.allEmojis.x}`}`, newQueue.filters.length > 1 ? false : true)
-						.addField(`▶️  View${newTrack.views > 0 ? "s": ""}:`, `>>> \`${newTrack.views}\``, true)
-						.addField(`:thumbsup: Like${newTrack.likes > 0 ? "s": ""}:`, `>>> \`${newTrack.likes}\``, true)
-						.addField(`:thumbsdown: Dislike${newTrack.dislikes > 0 ? "s": ""}:`, `>>> \`${newTrack.dislikes}\``, true)
+						.addFields({ name: `💡 Requested by:`, value: `>>> ${newTrack.user}`, inline: true })
+						.addFields({ name: `⏱ Duration:`, value: `>>> \`${newQueue.formattedCurrentTime} / ${newTrack.formattedDuration}\``, inline: true })
+						.addFields({ name: `🌀 Queue:`, value: `>>> \`${newQueue.songs.length} song(s)\`\n\`${newQueue.formattedDuration}\``, inline: true })
+						.addFields({ name: `🔊 Volume:`, value: `>>> \`${newQueue.volume} %\``, inline: true })
+						.addFields({ name: `♾ Loop:`, value: `>>> ${newQueue.repeatMode ? newQueue.repeatMode === 2 ? `${client.allEmojis.check_mark} \`Queue\`` : `${client.allEmojis.check_mark} \`Song\`` : `${client.allEmojis.x}`}`, inline: true })
+						.addFields({ name: `↪️ Autoplay:`, value: `>>> ${newQueue.autoplay ? `${client.allEmojis.check_mark}` : `${client.allEmojis.x}`}`, inline: true })
+						.addFields({ name: `❔ Download Song:`, value: `>>> [\`Click here\`](${newTrack.streamURL})`, inline: true })
+						.addFields({ name: `❔ Filter${newQueue.filters.length > 0 ? "s": ""}:`, value: `>>> ${newQueue.filters && newQueue.filters.length > 0 ? `${newQueue.filters.map(f=>`\`${f}\``).join(`, `)}` : `${client.allEmojis.x}`}`, inline: newQueue.filters.length > 1 ? false : true })
+						.addFields({ name: `▶️  View${newTrack.views > 0 ? "s": ""}:`, value: `>>> \`${newTrack.views}\``, inline: true })
+						.addFields({ name: `:thumbsup: Like${newTrack.likes > 0 ? "s": ""}:`, value: `>>> \`${newTrack.likes}\``, inline: true })
+						.addFields({ name: `:thumbsdown: Dislike${newTrack.dislikes > 0 ? "s": ""}:`, value: `>>> \`${newTrack.dislikes}\``, inline: true })
 						.setThumbnail(`https://img.youtube.com/vi/${newTrack.id}/mqdefault.jpg`)
-						.setFooter(`Played in: ${guild.name}`, guild.iconURL({
+						.setFooter({ text: `Played in: ${guild.name}`, iconURL: guild.iconURL({
 							dynamic: true
-						})).setTimestamp()
+						}) }).setTimestamp()
 					]
 				}).catch((e) => {
 					onsole.log(e.stack ? e.stack : e)

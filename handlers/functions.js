@@ -610,7 +610,7 @@ function onCoolDown(message, command) {
              .setDescription(current)
              .setTitle(TITLE)
              .setColor(ee.color)
-             .setFooter(ee.footertext, ee.footericon)
+             .setFooter({ text: ee.footertext, iconURL: ee.footericon })
            embeds.push(embed);
          }
          embeds;
@@ -625,7 +625,7 @@ function onCoolDown(message, command) {
              .setDescription(current)
              .setTitle(TITLE)
              .setColor(ee.color)
-             .setFooter(ee.footertext, ee.footericon)
+             .setFooter({ text: ee.footertext, iconURL: ee.footericon })
            embeds.push(embed);
          }
          embeds;
@@ -634,7 +634,7 @@ function onCoolDown(message, command) {
      if (embeds.length === 0) return message.channel.send({embeds: [new MessageEmbed()
      .setTitle(`${emoji.msg.ERROR} No Content added to the SWAP PAGES Function`)
      .setColor(ee.wrongcolor)
-     .setFooter(ee.footertext, ee.footericon)]}).catch(e => console.log("THIS IS TO PREVENT A CRASH"))
+     .setFooter({ text: ee.footertext, iconURL: ee.footericon })]}).catch(e => console.log("THIS IS TO PREVENT A CRASH"))
      if (embeds.length === 1) return message.channel.send({embeds: [embeds[0]]}).catch(e => console.log("THIS IS TO PREVENT A CRASH"))
    
      let button_back = new MessageButton().setStyle('SUCCESS').setCustomId('1').setEmoji("833802907509719130").setLabel("Back")

@@ -35,9 +35,9 @@ module.exports = {
         })),
         new MessageEmbed()
         .setColor(ee.color)
-        .setFooter(message.guild.name, message.guild.iconURL({
+        .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL({
           dynamic: true
-        }))
+        }) })
         .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
         .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
         .setDescription(`> *I support ▶️ Youtube, 🎵 Spotify, ☁️ Soundcloud and direct MP3 Links!*`)

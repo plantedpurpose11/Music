@@ -68,10 +68,10 @@ module.exports = (client) => {
                   uploader: track.uploader,
                   url: track.url,
                   views: track.views,
-                }), guild.members.cache.get(track.memberId) || guild.me, track.source);
+                }), guild.members.cache.get(track.memberId) || guild.members.me, track.source);
             };
-            await client.distube.playVoiceChannel(voiceChannel, tracks[0].url, {
-              member: guild.members.cache.get(tracks[0].memberId) || guild.me,
+            await client.distube.play(voiceChannel, tracks[0].url, {
+              member: guild.members.cache.get(tracks[0].memberId) || guild.members.me,
               textChannel: textChannel
             })
             let newQueue = client.distube.getQueue(guild.id);
@@ -157,7 +157,7 @@ module.exports = (client) => {
             if(i.customId != `10` && check_if_dj(client, i.member, client.distube.getQueue(i.guild.id).songs[0])) {
               return i.reply({embeds: [new MessageEmbed()
                 .setColor(ee.wrongcolor)
-                .setFooter(ee.footertext, ee.footericon)
+                .setFooter({ text: ee.footertext, iconURL: ee.footericon })
                 .setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`)
                 .setDescription(`**DJ-ROLES:**\n${check_if_dj(client, i.member, client.distube.getQueue(i.guild.id).songs[0])}`)
               ],
@@ -241,7 +241,7 @@ module.exports = (client) => {
                     .setColor(ee.color)
                     .setTimestamp()
                     .setTitle(`⏹ **Stopped playing and left the Channel**`)
-                    .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+                    .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
                   }).then(interaction => {
                     if(newQueue.textChannel.id === client.settings.get(newQueue.id, `music.channel`)){
                       setTimeout(()=>{
@@ -265,7 +265,7 @@ module.exports = (client) => {
                   .setColor(ee.color)
                   .setTimestamp()
                   .setTitle(`⏭ **Skipped to the next Song!**`)
-                  .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+                  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
               }).then(interaction => {
                 if(newQueue.textChannel.id === client.settings.get(newQueue.id, `music.channel`)){
                   setTimeout(()=>{
@@ -322,7 +322,7 @@ module.exports = (client) => {
                     .setColor(ee.color)
                     .setTimestamp()
                     .setTitle(`⏹ **Stopped playing and left the Channel!**`)
-                    .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+                    .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
                 }).then(interaction => {
                   if(newQueue.textChannel.id === client.settings.get(newQueue.id, `music.channel`)){
                     setTimeout(()=>{
@@ -386,7 +386,7 @@ module.exports = (client) => {
                     .setColor(ee.color)
                     .setTimestamp()
                     .setTitle(`⏸ **Paused!**`)
-                    .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+                    .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
                 }).then(interaction => {
                   if(newQueue.textChannel.id === client.settings.get(newQueue.id, `music.channel`)){
                     setTimeout(()=>{
@@ -410,7 +410,7 @@ module.exports = (client) => {
                     .setColor(ee.color)
                     .setTimestamp()
                     .setTitle(`▶️ **Resumed!**`)
-                    .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+                    .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
                 }).then(interaction => {
                   if(newQueue.textChannel.id === client.settings.get(newQueue.id, `music.channel`)){
                     setTimeout(()=>{
@@ -480,7 +480,7 @@ module.exports = (client) => {
                   .setColor(ee.color)
                   .setTimestamp()
                   .setTitle(`${newQueue.autoplay ? `${client.allEmojis.check_mark} **Enabled Autoplay**`: `${client.allEmojis.x} **Disabled Autoplay**`}`)
-                  .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+                  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
                 }).then(interaction => {
                   if(newQueue.textChannel.id === client.settings.get(newQueue.id, `music.channel`)){
                     setTimeout(()=>{
@@ -539,7 +539,7 @@ module.exports = (client) => {
                   .setColor(ee.color)
                   .setTimestamp()
                   .setTitle(`🔀 **Shuffled ${newQueue.songs.length} Songs!**`)
-                  .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+                  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
               }).then(interaction => {
                 if(newQueue.textChannel.id === client.settings.get(newQueue.id, `music.channel`)){
                   setTimeout(()=>{
@@ -602,7 +602,7 @@ module.exports = (client) => {
                   .setColor(ee.color)
                   .setTimestamp()
                   .setTitle(`${newQueue.repeatMode == 1 ? `${client.allEmojis.check_mark} **Enabled Song-Loop**`: `${client.allEmojis.x} **Disabled Song-Loop**`}`)
-                  .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+                  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
               }).then(interaction => {
                 if(newQueue.textChannel.id === client.settings.get(newQueue.id, `music.channel`)){
                   setTimeout(()=>{
@@ -669,7 +669,7 @@ module.exports = (client) => {
                   .setColor(ee.color)
                   .setTimestamp()
                   .setTitle(`${newQueue.repeatMode == 2 ? `${client.allEmojis.check_mark} **Enabled Queue-Loop**`: `${client.allEmojis.x} **Disabled Queue-Loop**`}`)
-                  .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+                  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
                 }).then(interaction => {
                   if(newQueue.textChannel.id === client.settings.get(newQueue.id, `music.channel`)){
                     setTimeout(()=>{
@@ -732,7 +732,7 @@ module.exports = (client) => {
                   .setColor(ee.color)
                   .setTimestamp()
                   .setTitle(`⏩ **Forwarded the song for \`10 Seconds\`!**`)
-                  .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+                  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
               }).then(interaction => {
                 if(newQueue.textChannel.id === client.settings.get(newQueue.id, `music.channel`)){
                   setTimeout(()=>{
@@ -796,7 +796,7 @@ module.exports = (client) => {
                   .setColor(ee.color)
                   .setTimestamp()
                   .setTitle(`⏪ **Rewinded the song for \`10 Seconds\`!**`)
-                  .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+                  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
               }).then(interaction => {
                 if(newQueue.textChannel.id === client.settings.get(newQueue.id, `music.channel`)){
                   setTimeout(()=>{
@@ -842,13 +842,13 @@ module.exports = (client) => {
           new MessageEmbed()
           .setColor(ee.color)
           .setThumbnail(`https://img.youtube.com/vi/${song.id}/mqdefault.jpg`)
-          .setFooter(`💯 ` + song.user.tag, song.user.displayAvatarURL({
+          .setFooter({ text: `💯 ` + song.user.tag, iconURL: song.user.displayAvatarURL({
             dynamic: true
-          }))
+          }) })
           .setTitle(`${client.allEmojis.check_mark} **Song added to the Queue!**`)
           .setDescription(`👍 Song: [\`${song.name}\`](${song.url})  -  \`${song.formattedDuration}\``)
-          .addField(`⌛ **Estimated Time:**`, `\`${queue.songs.length - 1} song${queue.songs.length > 0 ? `s` : ``}\` - \`${(Math.floor((queue.duration - song.duration) / 60 * 100) / 100).toString().replace(`.`, `:`)}\``)
-          .addField(`🌀 **Queue Duration:**`, `\`${queue.formattedDuration}\``)
+          .addFields({ name: `⌛ **Estimated Time:**`, value: `\`${queue.songs.length - 1} song${queue.songs.length > 0 ? `s` : ``}\` - \`${(Math.floor((queue.duration - song.duration) / 60 * 100) / 100).toString().replace(`.`, `:`)}\`` })
+          .addFields({ name: `🌀 **Queue Duration:**`, value: `\`${queue.formattedDuration}\`` })
           ]
         }).then(msg => {
           if(queue.textChannel.id === client.settings.get(queue.id, `music.channel`)){
@@ -871,13 +871,13 @@ module.exports = (client) => {
           new MessageEmbed()
           .setColor(ee.color)
           .setThumbnail(playlist.thumbnail.url ? playlist.thumbnail.url : `https://img.youtube.com/vi/${playlist.songs[0].id}/mqdefault.jpg`)
-          .setFooter(`💯` + playlist.user.tag, playlist.user.displayAvatarURL({
+          .setFooter({ text: `💯` + playlist.user.tag, iconURL: playlist.user.displayAvatarURL({
             dynamic: true
-          }))
+          }) })
           .setTitle(`${client.allEmojis.check_mark} **Playlist added to the Queue!**`)
           .setDescription(`👍 Playlist: [\`${playlist.name}\`](${playlist.url ? playlist.url : ``})  -  \`${playlist.songs.length} Song${playlist.songs.length > 0 ? `s` : ``}\``)
-          .addField(`⌛ **Estimated Time:**`, `\`${queue.songs.length - - playlist.songs.length} song${queue.songs.length > 0 ? `s` : ``}\` - \`${(Math.floor((queue.duration - playlist.duration) / 60 * 100) / 100).toString().replace(`.`, `:`)}\``)
-          .addField(`🌀 **Queue Duration:**`, `\`${queue.formattedDuration}\``)
+          .addFields({ name: `⌛ **Estimated Time:**`, value: `\`${queue.songs.length - - playlist.songs.length} song${queue.songs.length > 0 ? `s` : ``}\` - \`${(Math.floor((queue.duration - playlist.duration) / 60 * 100) / 100).toString().replace(`.`, `:`)}\`` })
+          .addFields({ name: `🌀 **Queue Duration:**`, value: `\`${queue.formattedDuration}\`` })
         ]
         }).then(msg => {
           if(queue.textChannel.id === client.settings.get(queue.id, `music.channel`)){
@@ -911,9 +911,9 @@ module.exports = (client) => {
         .setAuthor(`${song.name}`, `https://cdn.discordapp.com/attachments/883978730261860383/883978741892649000/847032838998196234.png`, song.url)
         .setDescription(`See the [Queue on the **DASHBOARD** Live!](${require(`../dashboard/settings.json`).website.domain}/${queue.id})`)
         .setThumbnail(`https://img.youtube.com/vi/${song.id}/mqdefault.jpg`)
-        .setFooter(`💯 ${song.user.tag}\n⛔️ SONG ENDED!`, song.user.displayAvatarURL({
+        .setFooter({ text: `💯 ${song.user.tag}\n⛔️ SONG ENDED!`, iconURL: song.user.displayAvatarURL({
           dynamic: true
-        }));
+        }) });
         queue.textChannel.messages.fetch(PlayerMap.get(`currentmsg`)).then(currentSongPlayMsg=>{
           currentSongPlayMsg.edit({embeds: [embed], components: []}).catch((e) => {
             //console.log(e.stack ? String(e.stack).grey : String(e).grey)
@@ -945,7 +945,7 @@ module.exports = (client) => {
           updateMusicSystem(queue, true);
           queue.textChannel.send({
             embeds: [
-              new MessageEmbed().setColor(ee.color).setFooter(ee.footertext, ee.footericon)
+              new MessageEmbed().setColor(ee.color).setFooter({ text: ee.footertext, iconURL: ee.footericon })
               .setTitle(`⛔️ LEFT QUEUE GOT DELETED`)
               .setDescription(`:headphones: **The QUEUE got deleted**`)
               .setTimestamp()
@@ -989,7 +989,7 @@ module.exports = (client) => {
               let channel = guild.channels.cache.get(client.settings.get(queue.id, `music.channel`));
               if (!channel) channel = await guild.channels.fetch(client.settings.get(queue.id, `music.channel`)).catch(() => {}) || false
               if (!channel) return console.log(`Music System - Relevant Checker`.brightCyan + ` - Channel not found!`)
-              if (!channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.MANAGE_MESSAGES)) return console.log(`Music System - Relevant Checker`.brightCyan + ` - Missing Permissions`)
+              if (!channel.permissionsFor(channel.guild.members.me).has(Permissions.FLAGS.MANAGE_MESSAGES)) return console.log(`Music System - Relevant Checker`.brightCyan + ` - Missing Permissions`)
               //try to get the channel
               let messages = await channel.messages.fetch();
               if (messages.filter(m => m.id != messageId).size > 0) {
@@ -1077,7 +1077,7 @@ module.exports = (client) => {
               let channel = guild.channels.cache.get(client.settings.get(queue.id, `music.channel`));
               if (!channel) channel = await guild.channels.fetch(client.settings.get(queue.id, `music.channel`)).catch(() => {}) || false
               if (!channel) return console.log(`Music System Edit Embeds`.brightMagenta + ` - Music System - Channel not found!`)
-              if (!channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) return console.log(`Music System - Missing Permissions`)
+              if (!channel.permissionsFor(channel.guild.members.me).has(Permissions.FLAGS.SEND_MESSAGES)) return console.log(`Music System - Missing Permissions`)
               //try to get the channel
               let message = channel.messages.cache.get(messageId);
               if (!message) message = await channel.messages.fetch(messageId).catch(() => {}) || false;
@@ -1161,22 +1161,22 @@ module.exports = (client) => {
     } = message.member.voice;
     if (!channel) return message.reply({
       embeds: [
-        new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.me.voice.channel ? `__my__` : `a`} VoiceChannel First!**`)
+        new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? `__my__` : `a`} VoiceChannel First!**`)
       ],
     })
     if (channel.userLimit != 0 && channel.full)
       return message.reply({
         embeds: [new MessageEmbed()
           .setColor(ee.wrongcolor)
-          .setFooter(ee.footertext, ee.footericon)
+          .setFooter({ text: ee.footertext, iconURL: ee.footericon })
           .setTitle(`${client.allEmojis.x} Your Voice Channel is full, I can't join!`)
         ],
       });
-    if (channel.guild.me.voice.channel && channel.guild.me.voice.channel.id != channel.id) {
+    if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
       return message.reply({
         embeds: [new MessageEmbed()
           .setColor(ee.wrongcolor)
-          .setFooter(ee.footertext, ee.footericon)
+          .setFooter({ text: ee.footertext, iconURL: ee.footericon })
           .setTitle(`${client.allEmojis.x} I am already connected somewhere else`)
         ],
       });
@@ -1189,7 +1189,7 @@ module.exports = (client) => {
         member: message.member,
       }
       if (!queue) options.textChannel = message.guild.channels.cache.get(message.channel.id)
-      await client.distube.playVoiceChannel(channel, Text, options)
+      await client.distube.play(channel, Text, options)
      
     } catch (e) {
       console.log(e.stack ? e.stack : e)
@@ -1246,22 +1246,22 @@ module.exports = (client) => {
       })
       if (!member.voice.channel) return message.reply({
 				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.me.voice.channel ? `__my__` : `a`} VoiceChannel First!**`)
+					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? `__my__` : `a`} VoiceChannel First!**`)
 				],
 			})
 			if (member.voice.channel.userLimit != 0 && member.voice.channel.full)
 				return message.reply({
 					embeds: [new MessageEmbed()
 						.setColor(ee.wrongcolor)
-						.setFooter(ee.footertext, ee.footericon)
+						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 						.setTitle(`${client.allEmojis.x} Your Voice Channel is full, I can't join!`)
 					],
 				});
-			if (guild.me.voice.channel && guild.me.voice.channel.id != member.voice.channel.id) {
+			if (guild.members.me.voice.channel && guild.members.me.voice.channel.id != member.voice.channel.id) {
 				return message.reply({
 					embeds: [new MessageEmbed()
 						.setColor(ee.wrongcolor)
-						.setFooter(ee.footertext, ee.footericon)
+						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 						.setTitle(`${client.allEmojis.x} I am already connected somewhere else`)
 					],
 				});
@@ -1280,7 +1280,7 @@ module.exports = (client) => {
         return interaction.reply({
           embeds: [new MessageEmbed()
             .setColor(ee.wrongcolor)
-            .setFooter(ee.footertext, ee.footericon)
+            .setFooter({ text: ee.footertext, iconURL: ee.footericon })
             .setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`)
             .setDescription(`**DJ-ROLES:**\n${check_if_dj(client, member, newQueue.songs[0])}`)
           ],
@@ -1297,9 +1297,9 @@ module.exports = (client) => {
                 .setColor(ee.color)
                 .setTimestamp()
                 .setTitle(`⏹ **Stopped playing and left the Channel**`)
-                .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({
+                .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({
                   dynamic: true
-                }))
+                }) })
               ]
             })
             await newQueue.stop()
@@ -1312,9 +1312,9 @@ module.exports = (client) => {
               .setColor(ee.color)
               .setTimestamp()
               .setTitle(`⏭ **Skipped to the next Song!**`)
-              .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({
+              .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({
                 dynamic: true
-              }))
+              }) })
             ]
           })
           
@@ -1327,9 +1327,9 @@ module.exports = (client) => {
             .setColor(ee.color)
             .setTimestamp()
             .setTitle(`⏹ **Stopped playing and left the Channel**`)
-            .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({
+            .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({
               dynamic: true
-            }))
+            }) })
           ]
         })
         if (newQueue) {
@@ -1346,9 +1346,9 @@ module.exports = (client) => {
               .setColor(ee.color)
               .setTimestamp()
               .setTitle(`▶️ **Resumed!**`)
-              .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({
+              .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({
                 dynamic: true
-              }))
+              }) })
             ]
           })
         } else {
@@ -1360,9 +1360,9 @@ module.exports = (client) => {
               .setColor(ee.color)
               .setTimestamp()
               .setTitle(`⏸ **Paused!**`)
-              .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({
+              .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({
                 dynamic: true
-              }))
+              }) })
             ]
           })
         }
@@ -1377,9 +1377,9 @@ module.exports = (client) => {
             .setColor(ee.color)
             .setTimestamp()
             .setTitle(`${newQueue.autoplay ? `${client.allEmojis.check_mark} **Enabled Autoplay**`: `${client.allEmojis.x} **Disabled Autoplay**`}`)
-            .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({
+            .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({
               dynamic: true
-            }))
+            }) })
           ]
         })
         
@@ -1396,9 +1396,9 @@ module.exports = (client) => {
             .setColor(ee.color)
             .setTimestamp()
             .setTitle(`🔀 **Shuffled ${newQueue.songs.length} Songs!**`)
-            .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({
+            .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({
               dynamic: true
-            }))
+            }) })
           ]
         })
         
@@ -1416,9 +1416,9 @@ module.exports = (client) => {
             .setColor(ee.color)
             .setTimestamp()
             .setTitle(`${newQueue.repeatMode == 1 ? `${client.allEmojis.check_mark} **Enabled Song Loop**`: `${client.allEmojis.x} **Disabled Song Loop**`}`)
-            .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({
+            .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({
               dynamic: true
-            }))
+            }) })
           ]
         })
         
@@ -1436,9 +1436,9 @@ module.exports = (client) => {
             .setColor(ee.color)
             .setTimestamp()
             .setTitle(`${newQueue.repeatMode == 2 ? `${client.allEmojis.check_mark} **Enabled Queue Loop**`: `${client.allEmojis.x} **Disabled Queue Loop**`}`)
-            .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({
+            .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({
               dynamic: true
-            }))
+            }) })
           ]
         })
         
@@ -1455,9 +1455,9 @@ module.exports = (client) => {
             .setColor(ee.color)
             .setTimestamp()
             .setTitle(`⏩ **Forwarded the song for \`10 Seconds\`!**`)
-            .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({
+            .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({
               dynamic: true
-            }))
+            }) })
           ]
         })
         
@@ -1474,9 +1474,9 @@ module.exports = (client) => {
             .setColor(ee.color)
             .setTimestamp()
             .setTitle(`⏪ **Rewinded the song for \`10 Seconds\`!**`)
-            .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({
+            .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({
               dynamic: true
-            }))
+            }) })
           ]
         })
       }
@@ -1530,7 +1530,7 @@ module.exports = (client) => {
 					member: member,
 				}
 				if (!newQueue) options.textChannel = guild.channels.cache.get(channel.id)
-				await client.distube.playVoiceChannel(member.voice.channel, link, options)
+				await client.distube.play(member.voice.channel, link, options)
 				//Edit the reply
 				interaction.editReply({
 					content: `${newQueue?.songs?.length > 0 ? `👍 Loaded` : `🎶 Now Playing`}: the **'${interaction.values[0]}'**`,
@@ -1561,7 +1561,7 @@ module.exports = (client) => {
       let channel = guild.channels.cache.get(client.settings.get(queue.id, `music.channel`));
       if (!channel) channel = await guild.channels.fetch(client.settings.get(queue.id, `music.channel`)).catch(() => {}) || false
       if (!channel) return console.log(`Update-Music-System`.brightCyan + ` - Music System - Channel not found!`)
-      if (!channel.permissionsFor(channel.guild.me).has(Permissions.FLAGS.SEND_MESSAGES)) return console.log(`Music System - Missing Permissions`)
+      if (!channel.permissionsFor(channel.guild.members.me).has(Permissions.FLAGS.SEND_MESSAGES)) return console.log(`Music System - Missing Permissions`)
       //try to get the channel
       let message = channel.messages.cache.get(messageId);
       if (!message) message = await channel.messages.fetch(messageId).catch(() => {}) || false;
@@ -1591,9 +1591,9 @@ module.exports = (client) => {
       })),
       new MessageEmbed()
       .setColor(ee.color)
-      .setFooter(guild.name, guild.iconURL({
+      .setFooter({ text: guild.name, iconURL: guild.iconURL({
         dynamic: true
-      }))
+      }) })
       .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
       .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
       .setDescription(`> *I support ▶️ Youtube, 🎵 Spotify, ☁️ Soundcloud and direct MP3 Links!*`)
@@ -1606,15 +1606,15 @@ module.exports = (client) => {
     else djs.slice(0, 15).join(`, `);
     if (!leave && newQueue && newQueue.songs[0]) {
       embeds[1].setImage(`https://img.youtube.com/vi/${newQueue.songs[0].id}/mqdefault.jpg`)
-        .setFooter(`Requested by: ${newQueue.songs[0].user?.tag}`, newQueue.songs[0].user?.displayAvatarURL({
+        .setFooter({ text: `Requested by: ${newQueue.songs[0].user?.tag}`, iconURL: newQueue.songs[0].user?.displayAvatarURL({
           dynamic: true
-        }))
-        .addField(`💡 Requested by:`, `>>> ${newQueue.songs[0].user}`, true)
-        .addField(`🔊 Volume:`, `>>> \`${newQueue.volume} %\``, true)
-        .addField(`${newQueue.playing ? `♾ Loop (▶️):` : `⏸️ Paused:`}`, newQueue.playing ? `>>> ${newQueue.repeatMode ? newQueue.repeatMode === 2 ? `${client.allEmojis.check_mark}\` Queue\`` : `${client.allEmojis.check_mark} \`Song\`` : `${client.allEmojis.x}`}` : `>>> ${client.allEmojis.check_mark}`, true)
-        .addField(`❔ Filter${newQueue.filters.length > 0 ? `s`: ``}:`, `>>> ${newQueue.filters && newQueue.filters.length > 0 ? `${newQueue.filters.map(f=>`\`${f}\``).join(`, `)}` : `${client.allEmojis.x}`}`, newQueue.filters.length > 4 ? false : true)
-        .addField(`🎧 DJ-Role${client.settings.get(newQueue.id, `djroles`).length > 1 ? `s`: ``}:`, `>>> ${djs}`, newQueue.filters.length > 4 ? false : true)
-        .addField(`⏱ Duration:`, `\`${newQueue.formattedCurrentTime}\` ${createBar(newQueue.songs[0].duration, newQueue.currentTime, 13)} \`${newQueue.songs[0].formattedDuration}\``)
+        }) })
+        .addFields({ name: `💡 Requested by:`, value: `>>> ${newQueue.songs[0].user}`, inline: true })
+        .addFields({ name: `🔊 Volume:`, value: `>>> \`${newQueue.volume} %\``, inline: true })
+        .addFields({ name: `${newQueue.playing ? `♾ Loop (▶️):` : `⏸️ Paused:`}`, value: newQueue.playing ? `>>> ${newQueue.repeatMode ? newQueue.repeatMode === 2 ? `${client.allEmojis.check_mark}\` Queue\`` : `${client.allEmojis.check_mark} \`Song\`` : `${client.allEmojis.x}`}` : `>>> ${client.allEmojis.check_mark}`, inline: true })
+        .addFields({ name: `❔ Filter${newQueue.filters.length > 0 ? `s`: ``}:`, value: `>>> ${newQueue.filters && newQueue.filters.length > 0 ? `${newQueue.filters.map(f=>`\`${f}\``).join(`, `)}` : `${client.allEmojis.x}`}`, inline: newQueue.filters.length > 4 ? false : true })
+        .addFields({ name: `🎧 DJ-Role${client.settings.get(newQueue.id, `djroles`).length > 1 ? `s`: ``}:`, value: `>>> ${djs}`, inline: newQueue.filters.length > 4 ? false : true })
+        .addFields({ name: `⏱ Duration:`, value: `\`${newQueue.formattedCurrentTime}\` ${createBar(newQueue.songs[0].duration, newQueue.currentTime, 13)} \`${newQueue.songs[0].formattedDuration}\`` })
         .setAuthor(`${newQueue.songs[0].name}`, `https://images-ext-1.discordapp.net/external/DkPCBVBHBDJC8xHHCF2G7-rJXnTwj_qs78udThL8Cy0/%3Fv%3D1/https/cdn.discordapp.com/emojis/859459305152708630.gif`, newQueue.songs[0].url)
       delete embeds[1].description;
       delete embeds[1].title;
@@ -1628,8 +1628,8 @@ module.exports = (client) => {
       .setColor(ee.color)
       .setDescription(String(songs.map((track, index) => `**\` ${++index}. \` ${track.url ? `[${track.name.substr(0, 60).replace(/\[/igu, `\\[`).replace(/\]/igu, `\\]`)}](${track.url})` : track.name}** - \`${track.isStream ? `LIVE STREAM` : track.formattedDuration}\`\n> *Requested by: __${track.user?.tag}__*`).join(`\n`)).substr(0, 2048));
       if(newQueue.songs.length > 10)
-        embeds[0].addField(`**\` N. \` *${newQueue.songs.length > maxTracks ? newQueue.songs.length - maxTracks : newQueue.songs.length} other Tracks ...***`, `\u200b`)
-      embeds[0].addField(`**\` 0. \` __CURRENT TRACK__**`, `**${newQueue.songs[0].url ? `[${newQueue.songs[0].name.substr(0, 60).replace(/\[/igu, `\\[`).replace(/\]/igu, `\\]`)}](${newQueue.songs[0].url})`:newQueue.songs[0].name}** - \`${newQueue.songs[0].isStream ? `LIVE STREAM` : newQueue.formattedCurrentTime}\`\n> *Requested by: __${newQueue.songs[0].user?.tag}__*`)
+        embeds[0].addFields({ name: `**\` N. \` *${newQueue.songs.length > maxTracks ? newQueue.songs.length - maxTracks : newQueue.songs.length} other Tracks ...***`, value: `\u200b` })
+      embeds[0].addFields({ name: `**\` 0. \` __CURRENT TRACK__**`, value: `**${newQueue.songs[0].url ? `[${newQueue.songs[0].name.substr(0, 60).replace(/\[/igu, `\\[`).replace(/\]/igu, `\\]`)}](${newQueue.songs[0].url})`:newQueue.songs[0].name}** - \`${newQueue.songs[0].isStream ? `LIVE STREAM` : newQueue.formattedCurrentTime}\`\n> *Requested by: __${newQueue.songs[0].user?.tag}__*` })
     }
     var Emojis = [
       `0️⃣`,
@@ -1739,20 +1739,20 @@ module.exports = (client) => {
     if(!newTrack) return new MessageEmbed().setColor(ee.wrongcolor).setTitle(`NO SONG FOUND?!?!`)
     var embed = new MessageEmbed().setColor(ee.color)
       .setDescription(`See the [Queue on the **DASHBOARD** Live!](${require(`../dashboard/settings.json`).website.domain}/queue/${newQueue.id})`)
-      .addField(`💡 Requested by:`, `>>> ${newTrack.user}`, true)
-      .addField(`⏱ Duration:`, `>>> \`${newQueue.formattedCurrentTime} / ${newTrack.formattedDuration}\``, true)
-      .addField(`🌀 Queue:`, `>>> \`${newQueue.songs.length} song(s)\`\n\`${newQueue.formattedDuration}\``, true)
-      .addField(`🔊 Volume:`, `>>> \`${newQueue.volume} %\``, true)
-      .addField(`♾ Loop:`, `>>> ${newQueue.repeatMode ? newQueue.repeatMode === 2 ? `${client.allEmojis.check_mark}\` Queue\`` : `${client.allEmojis.check_mark} \`Song\`` : `${client.allEmojis.x}`}`, true)
-      .addField(`↪️ Autoplay:`, `>>> ${newQueue.autoplay ? `${client.allEmojis.check_mark}` : `${client.allEmojis.x}`}`, true)
-      .addField(`❔ Download Song:`, `>>> [\`Click here\`](${newTrack.streamURL})`, true)
-      .addField(`❔ Filter${newQueue.filters.length > 0 ? `s`: ``}:`, `>>> ${newQueue.filters && newQueue.filters.length > 0 ? `${newQueue.filters.map(f=>`\`${f}\``).join(`, `)}` : `${client.allEmojis.x}`}`, newQueue.filters.length > 1 ? false : true)
-			.addField(`🎧 DJ-Role${client.settings.get(newQueue.id, `djroles`).length > 1 ? `s`: ``}:`, `>>> ${djs}`, client.settings.get(newQueue.id, `djroles`).length > 1 ? false : true)
+      .addFields({ name: `💡 Requested by:`, value: `>>> ${newTrack.user}`, inline: true })
+      .addFields({ name: `⏱ Duration:`, value: `>>> \`${newQueue.formattedCurrentTime} / ${newTrack.formattedDuration}\``, inline: true })
+      .addFields({ name: `🌀 Queue:`, value: `>>> \`${newQueue.songs.length} song(s)\`\n\`${newQueue.formattedDuration}\``, inline: true })
+      .addFields({ name: `🔊 Volume:`, value: `>>> \`${newQueue.volume} %\``, inline: true })
+      .addFields({ name: `♾ Loop:`, value: `>>> ${newQueue.repeatMode ? newQueue.repeatMode === 2 ? `${client.allEmojis.check_mark}\` Queue\`` : `${client.allEmojis.check_mark} \`Song\`` : `${client.allEmojis.x}`}`, inline: true })
+      .addFields({ name: `↪️ Autoplay:`, value: `>>> ${newQueue.autoplay ? `${client.allEmojis.check_mark}` : `${client.allEmojis.x}`}`, inline: true })
+      .addFields({ name: `❔ Download Song:`, value: `>>> [\`Click here\`](${newTrack.streamURL})`, inline: true })
+      .addFields({ name: `❔ Filter${newQueue.filters.length > 0 ? `s`: ``}:`, value: `>>> ${newQueue.filters && newQueue.filters.length > 0 ? `${newQueue.filters.map(f=>`\`${f}\``).join(`, `)}` : `${client.allEmojis.x}`}`, inline: newQueue.filters.length > 1 ? false : true })
+			.addFields({ name: `🎧 DJ-Role${client.settings.get(newQueue.id, `djroles`).length > 1 ? `s`: ``}:`, value: `>>> ${djs}`, inline: client.settings.get(newQueue.id, `djroles`).length > 1 ? false : true })
       .setAuthor(`${newTrack.name}`, `https://images-ext-1.discordapp.net/external/DkPCBVBHBDJC8xHHCF2G7-rJXnTwj_qs78udThL8Cy0/%3Fv%3D1/https/cdn.discordapp.com/emojis/859459305152708630.gif`, newTrack.url)
       .setThumbnail(`https://img.youtube.com/vi/${newTrack.id}/mqdefault.jpg`)
-      .setFooter(`💯 ${newTrack.user.tag}`, newTrack.user.displayAvatarURL({
+      .setFooter({ text: `💯 ${newTrack.user.tag}`, iconURL: newTrack.user.displayAvatarURL({
         dynamic: true
-      }));
+      }) });
     let skip = new MessageButton().setStyle('PRIMARY').setCustomId('1').setEmoji(`⏭`).setLabel(`Skip`)
     let stop = new MessageButton().setStyle('DANGER').setCustomId('2').setEmoji(`🏠`).setLabel(`Stop`)
     let pause = new MessageButton().setStyle('SECONDARY').setCustomId('3').setEmoji('⏸').setLabel(`Pause`)

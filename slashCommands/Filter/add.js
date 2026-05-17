@@ -49,17 +49,17 @@ module.exports = {
 			} = member.voice;
 			if (!channel) return interaction.reply({
 				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
+					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
 				],
 				ephemeral: true
 			})
-			if (channel.guild.me.voice.channel && channel.guild.me.voice.channel.id != channel.id) {
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
 				return interaction.reply({
 					embeds: [new MessageEmbed()
 						.setColor(ee.wrongcolor)
-						.setFooter(ee.footertext, ee.footericon)
+						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 						.setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`)
-						.setDescription(`<#${guild.me.voice.channel.id}>`)
+						.setDescription(`<#${guild.members.me.voice.channel.id}>`)
 					],
 					ephemeral: true
 				});
@@ -76,7 +76,7 @@ module.exports = {
 					return interaction.reply({
 						embeds: [new MessageEmbed()
 							.setColor(ee.wrongcolor)
-							.setFooter(ee.footertext, ee.footericon)
+							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 							.setTitle(`${client.allEmojis.x}**You are not a DJ and not the Song Requester!**`)
 							.setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, newQueue.songs[0])}`)
 						],
@@ -90,10 +90,10 @@ module.exports = {
 						embeds: [
 							new MessageEmbed()
 							.setColor(ee.wrongcolor)
-							.setFooter(ee.footertext, ee.footericon)
+							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 							.setTitle(`${client.allEmojis.x} **You added at least one Filter, which is invalid!**`)
 							.setDescription("**To define Multiple Filters add a SPACE (` `) in between!**")
-							.addField("**All Valid Filters:**", Object.keys(FiltersSettings).map(f => `\`${f}\``).join(", ") + "\n\n**Note:**\n> *All filters, starting with custom are having there own Command, please use them to define what custom amount u want!*")
+							.addFields({ name: "**All Valid Filters:**", value: Object.keys(FiltersSettings).map(f => `\`${f}\``).join(", ") + "\n\n**Note:**\n> *All filters, starting with custom are having there own Command, please use them to define what custom amount u want!*" })
 						],
 					})
 				}
@@ -109,9 +109,9 @@ module.exports = {
 						embeds: [
 							new MessageEmbed()
 							.setColor(ee.wrongcolor)
-							.setFooter(ee.footertext, ee.footericon)
+							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 							.setTitle(`${client.allEmojis.x} **You did not add a Filter, which is not in the Filters yet.**`)
-							.addField("**All __current__ Filters:**", newQueue.filters.map(f => `\`${f}\``).join(", "))
+							.addFields({ name: "**All __current__ Filters:**", value: newQueue.filters.map(f => `\`${f}\``).join(", ") })
 						],
 					})
 				}
@@ -121,7 +121,7 @@ module.exports = {
 					  .setColor(ee.color)
 					  .setTimestamp()
 					  .setTitle(`♨️ **Added ${toAdded.length} ${toAdded.length == filters.length ? "Filters": `of ${filters.length} Filters! The Rest was already a part of the Filters!`}**`)
-					  .setFooter(`💢 Action by: ${member.user.tag}`, member.user.displayAvatarURL({dynamic: true}))]
+					  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
 					})
 
 			} catch (e) {

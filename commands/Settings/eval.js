@@ -20,9 +20,9 @@ module.exports = {
       return message.channel.send({
         embeds: [new MessageEmbed()
           .setColor(ee.wrongcolor)
-          .setFooter(message.guild.name, message.guild.iconURL({
+          .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL({
             dynamic: true
-          }))
+          }) })
           .setTitle(`${client.allEmojis.x} Only \`Tomato#6966\` is allowed to execute this Code`)
         ]
       });
@@ -30,9 +30,9 @@ module.exports = {
       return message.channel.send({
         embeds: [new MessageEmbed()
           .setColor(ee.wrongcolor)
-          .setFooter(message.guild.name, message.guild.iconURL({
+          .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL({
             dynamic: true
-          }))
+          }) })
           .setTitle(`${client.allEmojis.x} Please add the Code to evaluate`)
         ]
       });

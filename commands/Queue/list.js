@@ -44,17 +44,17 @@ module.exports = {
 			} = member.voice;
 			if (!channel) return message.reply({
 				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
+					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
 				],
 
 			})
-			if (channel.guild.me.voice.channel && channel.guild.me.voice.channel.id != channel.id) {
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
 				return message.reply({
 					embeds: [new MessageEmbed()
 						.setColor(ee.wrongcolor)
-						.setFooter(ee.footertext, ee.footericon)
+						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
 						.setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`)
-						.setDescription(`<#${guild.me.voice.channel.id}>`)
+						.setDescription(`<#${guild.members.me.voice.channel.id}>`)
 					],
 				});
 			}
@@ -86,7 +86,7 @@ module.exports = {
 					k += 10; //Raise k to 10
 				}
 				embeds[embeds.length - 1] = embeds[embeds.length - 1]
-					.setFooter(ee.footertext + `\n${theSongs.length} Songs in the Queue | Duration: ${newQueue.formattedDuration}`, ee.footericon)
+					.setFooter({ text: ee.footertext + `\n${theSongs.length} Songs in the Queue | Duration: ${newQueue.formattedDuration}`, iconURL: ee.footericon })
 				let pages = []
 				for (let i = 0; i < embeds.length; i += 3) {
 					pages.push(embeds.slice(i, i + 3));
