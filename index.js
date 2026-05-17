@@ -1,7 +1,13 @@
-// Polyfill globalThis.crypto for Node.js < 19 (serialize-javascript v7 needs it)
+// Polyfill globals for Node.js < 18/19 (needed by undici and serialize-javascript)
 if (typeof globalThis.crypto === 'undefined') {
     const { webcrypto } = require('crypto');
     globalThis.crypto = webcrypto;
+}
+if (typeof globalThis.ReadableStream === 'undefined') {
+    const { ReadableStream, WritableStream, TransformStream } = require('stream/web');
+    globalThis.ReadableStream = ReadableStream;
+    globalThis.WritableStream = WritableStream;
+    globalThis.TransformStream = TransformStream;
 }
 
 const Discord = require("discord.js");
