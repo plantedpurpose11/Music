@@ -81,6 +81,39 @@ try {
 } catch (e) {
   console.warn("Voice encryption: sodium-native not available, falling back to other libs".yellow);
 }
+
+// Monkey-patch joinVoiceChannel to add debug logging for voice connections
+const originalJoinVoiceChannel = voice.joinVoiceChannel;
+voice.joinVoiceChannel = function(options) {
+  console.log("[Voice Debug] joinVoiceChannel called".cyan);
+  const connection = originalJoinVoiceChannel({ ...options, debug: true });
+  
+  // Log all state changes
+  connection.on("stateChange", (oldState, newState) => {
+    console.log(`[Voice Debug] Connection: ${oldState.status} → ${newState.status}`.cyan);
+  });
+  connection.on("debug", (message) => {
+    console.log(`[Voice Debug] ${message}`.gray);
+  });
+  connection.on("error", (error) => {
+    console.error(`[Voice Debug] Connection error: ${error.message}`.red);
+  });
+  
+  // Check if packets arrive
+  const origAddServer = connection.addServerPacket.bind(connection);
+  connection.addServerPacket = function(packet) {
+    console.log(`[Voice Debug] Got VOICE_SERVER_UPDATE: endpoint=${packet.endpoint}`.cyan);
+    return origAddServer(packet);
+  };
+  const origAddState = connection.addStatePacket.bind(connection);
+  connection.addStatePacket = function(packet) {
+    console.log(`[Voice Debug] Got VOICE_STATE_UPDATE: channel=${packet.channel_id}, session=${packet.session_id?.slice(0,8)}...`.cyan);
+    return origAddState(packet);
+  };
+  
+  return connection;
+};
+
 const DisTube = require("distube").default;
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const client = new Discord.Client({
