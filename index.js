@@ -160,6 +160,7 @@ const proxyUrl = process.env.PROXY_URL;
 const agent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
 const { SpotifyPlugin } = require("@distube/spotify");
 const { SoundCloudPlugin } = require("@distube/soundcloud");
+const YtDlpPlugin = require("./plugins/YtDlpPlugin");
 
 let spotifyoptions = {
   parallel: true,
@@ -201,6 +202,7 @@ client.distube = new DisTube(client, {
   updateYouTubeDL: true,
   customFilters: filters,
   plugins: [
+    new YtDlpPlugin(),
     new SpotifyPlugin(spotifyoptions),
     new SoundCloudPlugin()
   ]
