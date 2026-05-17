@@ -1594,9 +1594,7 @@ module.exports = (client) => {
       .setFooter(guild.name, guild.iconURL({
         dynamic: true
       }))
-      .setImage(guild.banner ? guild.bannerURL({
-        size: 4096
-      }) : `https://imgur.com/jLvYdb4.png`)
+      .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
       .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
       .setDescription(`> *I support ▶️ Youtube, 🎵 Spotify, ☁️ Soundcloud and direct MP3 Links!*`)
     ]
