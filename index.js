@@ -71,9 +71,16 @@ const settings = require(`./botconfig/settings.json`);
 const filters = require(`./botconfig/filters.json`);
 const colors = require("colors");
 const Enmap = require("enmap");
-const libsodium = require("libsodium-wrappers");
 const ffmpeg = require("ffmpeg-static");
 const voice = require("@discordjs/voice");
+
+// Verify voice encryption library loaded (sodium-native for xchacha20)
+try {
+  const sodium = require("sodium-native");
+  console.log("Voice encryption: sodium-native loaded OK".green);
+} catch (e) {
+  console.warn("Voice encryption: sodium-native not available, falling back to other libs".yellow);
+}
 const DisTube = require("distube").default;
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const client = new Discord.Client({
