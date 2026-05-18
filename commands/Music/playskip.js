@@ -98,16 +98,29 @@ module.exports = {
 					});
 				}
 				
-				const result = await node.search(Text, message.author?.id);
-				
-				if (!result.tracks || result.tracks.length === 0) {
+				// Try multiple sources for fallback
+				const sources = ['ytsearch', 'scsearch', 'bcsearch'];
+				let result = null;
+				let track = null;
+
+				for (const source of sources) {
+					try {
+						result = await node.search(`${source}:${Text}`, message.author?.id);
+						if (result.tracks && result.tracks.length > 0) {
+							track = result.tracks[0];
+							break;
+						}
+					} catch (e) {
+						console.log(`Search [${source}] error:`, e.message);
+					}
+				}
+
+				if (!track) {
 					return message.reply({
 						content: `${client.allEmojis.x} No tracks found!`,
 						embeds: []
 					});
 				}
-				
-				const track = result.tracks[0];
 				track.requester = member;
 				
 				player.textChannel = channelId;

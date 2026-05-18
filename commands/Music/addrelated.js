@@ -76,7 +76,7 @@ module.exports = {
                                 }
 
                                 // Search with the current song name to find related tracks
-                                const result = await node.search(`${currentSong.author} ${currentSong.title}`);
+                                const result = await node.search(`ytsearch:${currentSong.author} ${currentSong.title}`);
                                 
                                 if (!result.tracks || result.tracks.length <= 1) {
                                         return thenewmsg.edit({

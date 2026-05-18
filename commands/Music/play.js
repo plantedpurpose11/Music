@@ -83,17 +83,32 @@ module.exports = {
 					});
 				}
 				
-				// Search for the track
-				const result = await node.search(Text, message.author?.id); console.log("Search:", JSON.stringify(result));
-				
-				if (!result.tracks || result.tracks.length === 0) {
+				// Search with fallback: try YouTube, SoundCloud, Bandcamp
+				const sources = ['ytsearch', 'scsearch', 'bcsearch'];
+				let result = null;
+				let track = null;
+
+				for (const source of sources) {
+					try {
+						result = await node.search(`${source}:${Text}`, message.author?.id);
+						console.log(`Search [${source}]:`, result.loadType);
+						if (result.tracks && result.tracks.length > 0) {
+							track = result.tracks[0];
+							console.log(`Found via ${source}:`, track.info.title);
+							break;
+						}
+					} catch (e) {
+						console.log(`Search [${source}] error:`, e.message);
+					}
+				}
+
+				if (!track) {
 					return message.reply({
-						content: `${client.allEmojis.x} No tracks found!`,
+						content: `${client.allEmojis.x} No tracks found on YouTube, SoundCloud, or Bandcamp!`,
 						embeds: []
 					});
 				}
-				
-				const track = result.tracks[0];
+
 				track.requester = member;
 				
 				// Add to queue
