@@ -147,7 +147,7 @@ module.exports = (client) => {
         songEditInterval = setInterval(async () => {
           if (!lastEdited) {
             try{
-              var newData = receiveQueueData(player, player.queue[0] || track)
+              var newData = receiveQueueData(player, (player.queue && player.queue[0]) ? player.queue[0] : track)
               await currentSongPlayMsg.edit(newData).catch((e) => {})
             }catch (e){
               clearInterval(songEditInterval)
@@ -156,12 +156,12 @@ module.exports = (client) => {
         }, 10000)
 
         collector.on('collect', async i => {
-          if(i.customId != `10` && check_if_dj(client, i.member, player.queue[0])) {
+          if(!player.queue || (i.customId != `10` && check_if_dj(client, i.member, player.queue ? player.queue[0] : null))) {
             return i.reply({embeds: [new MessageEmbed()
               .setColor(ee.wrongcolor)
               .setFooter({ text: ee.footertext, iconURL: ee.footericon })
               .setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`)
-              .setDescription(`**DJ-ROLES:**\n${check_if_dj(client, i.member, player.queue[0])}`)
+              .setDescription(`**DJ-ROLES:**\n${check_if_dj(client, i.member, player.queue ? player.queue[0] : null)}`)
             ],
             ephemeral: true})
           }
@@ -186,9 +186,11 @@ module.exports = (client) => {
               // Toggle autoplay logic
               break;
             case "5": // Shuffle
-              for (let i = player.queue.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [player.queue[i], player.queue[j]] = [player.queue[j], player.queue[i]];
+              if(player.queue && player.queue.length > 1) {
+                for (let i = player.queue.length - 1; i > 0; i--) {
+                  const j = Math.floor(Math.random() * (i + 1));
+                  [player.queue[i], player.queue[j]] = [player.queue[j], player.queue[i]];
+                }
               }
               break;
             case "6": // Song Loop
@@ -206,7 +208,7 @@ module.exports = (client) => {
           }
           
           try {
-            var newData = receiveQueueData(player, player.queue[0])
+            var newData = receiveQueueData(player, player.queue ? player.queue[0] : null)
             await i.message.edit(newData).catch((e) => {})
             i.reply({ embeds: [new MessageEmbed().setColor(ee.color).setTitle(`Action performed!`)] }).then(msg => {
               setTimeout(() => {
@@ -256,7 +258,7 @@ module.exports = (client) => {
         client.autoresume.set(player.guild, {
           voiceChannel: player.voiceChannel,
           textChannel: player.textChannel,
-          songs: player.queue,
+          songs: player.queue || [],
           volume: player.volume,
           repeatMode: player.repeatMode,
           playing: player.playing,
@@ -293,7 +295,7 @@ module.exports = (client) => {
         .setDescription(`See the [Queue on the **DASHBOARD** Live!](${require(`../dashboard/settings.json`).website.domain}/queue/${player.guild})`)
         .addFields({ name: `Requested by:`, value: `>>> ${newTrack.requester || "Unknown"}`, inline: true })
         .addFields({ name: `Duration:`, value: `>>> \`${client.formatDuration(player.position)} / ${client.formatDuration(newTrack.duration)}\``, inline: true })
-        .addFields({ name: `Queue:`, value: `>>> \`${player.queue.length} song(s)\``, inline: true })
+        .addFields({ name: `Queue:`, value: `>>> \`${player.queue ? player.queue.length : 0} song(s)\``, inline: true })
         .addFields({ name: `Volume:`, value: `>>> \`${player.volume} %\``, inline: true })
         .addFields({ name: `Loop:`, value: `>>> ${player.repeatMode ? player.repeatMode === "queue" ? `${client.allEmojis.check_mark}\` Queue\`` : `${client.allEmojis.check_mark} \`Song\`` : `${client.allEmojis.x}`}`, inline: true })
         .addFields({ name: `Filter${player.equalizer?.active?.length > 0 ? `s`: ``}:`, value: `>>> ${player.equalizer?.active?.length > 0 ? player.equalizer.active.map(f => String(f)).join(`, `) : `${client.allEmojis.x}`}`, inline: true })
@@ -323,7 +325,7 @@ module.exports = (client) => {
         songloop = songloop.setStyle('SUCCESS')
         queueloop = queueloop.setStyle('SECONDARY')
       }
-      if (player.queue.length < 2) {
+      if (!player.queue || player.queue.length < 2) {
         shuffle = shuffle.setDisabled()
       }
       
