@@ -98,7 +98,7 @@ module.exports = {
 					});
 				}
 				
-				const result = await node.search(Text);
+				const result = await node.search(Text, message.author?.id);
 				
 				if (!result.tracks || result.tracks.length === 0) {
 					return message.reply({

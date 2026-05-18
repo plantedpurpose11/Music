@@ -84,7 +84,7 @@ module.exports = {
 				}
 				
 				// Search for the track
-				const result = await node.search(Text);
+				const result = await node.search(Text, message.author?.id); console.log("Search:", JSON.stringify(result));
 				
 				if (!result.tracks || result.tracks.length === 0) {
 					return message.reply({
