@@ -86,11 +86,11 @@ module.exports = {
 				}
 
 				if (!player) {
-					player = client.manager.createPlayer(guildId);
-					player.connect(channel.id, { deafen: true });
+					player = client.manager.createPlayer(guildId, { voiceChannelId: channel.id });
+					player.connect({ deafen: true });
 				}
 				
-				const node = client.manager.nodes.first();
+				const node = client.manager?.nodeManager?.nodes?.values()?.().next()?.value;
 				if (!node) {
 					return message.reply({
 						content: `${client.allEmojis.x} No Lavalink node available!`,

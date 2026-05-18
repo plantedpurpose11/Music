@@ -67,7 +67,7 @@ module.exports = {
                                 })
 
                                 // Search for related tracks using the current song's info
-                                const node = client.manager.nodes.first();
+                                const node = client.manager?.nodeManager?.nodes?.values()?.().next()?.value;
                                 if (!node) {
                                         return message.reply({
                                                 content: `${client.allEmojis.x} No Lavalink node available!`,
