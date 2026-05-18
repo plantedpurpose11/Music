@@ -111,7 +111,10 @@ module.exports = {
 
 				track.requester = member;
 				
-				// Add to queue
+				// Add to queue - ensure queue is initialized
+				if (!player.queue) {
+					player.queue = [];
+				}
 				player.queue.push(track);
 				
 				// Store text channel for now playing messages

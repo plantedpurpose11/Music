@@ -114,6 +114,12 @@ client.on("ready", () => {
     })
     .on("error", (node, error) => {
       console.log(`Lavalink node error: ${error.message}`.red);
+    })
+    .on("playerCreate", (player) => {
+      // Ensure queue is initialized as an array
+      if (!Array.isArray(player.queue)) {
+        player.queue = [];
+      }
     });
     
     manager.init({ id: client.user.id });
@@ -135,7 +141,17 @@ client.on("ready", () => {
     .on("nodeError", (node, error) => {
       console.log(`Lavalink node error: ${error.message}`.red);
     })
+    .on("playerCreate", (player) => {
+      // Ensure queue is initialized as an array for erela.js
+      if (!Array.isArray(player.queue)) {
+        player.queue = [];
+      }
+    })
     .on("trackStart", (player, track) => {
+      // Ensure queue is an array before track start
+      if (!Array.isArray(player.queue)) {
+        player.queue = [];
+      }
       if (player.textChannel) {
         const channel = client.channels.cache.get(player.textChannel);
         if (channel) {
