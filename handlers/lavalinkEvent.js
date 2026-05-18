@@ -296,7 +296,7 @@ module.exports = (client) => {
         .addFields({ name: `Queue:`, value: `>>> \`${player.queue.length} song(s)\``, inline: true })
         .addFields({ name: `Volume:`, value: `>>> \`${player.volume} %\``, inline: true })
         .addFields({ name: `Loop:`, value: `>>> ${player.repeatMode ? player.repeatMode === "queue" ? `${client.allEmojis.check_mark}\` Queue\`` : `${client.allEmojis.check_mark} \`Song\`` : `${client.allEmojis.x}`}`, inline: true })
-        .addFields({ name: `Filter${player.equalizer?.active?.length > 0 ? `s`: ``}:`, value: `>>> ${player.equalizer?.active?.length > 0 ? player.equalizer.active.map(f=>\`${f}\`).join(`, `) : `${client.allEmojis.x}`}`, inline: true })
+        .addFields({ name: `Filter${player.equalizer?.active?.length > 0 ? `s`: ``}:`, value: `>>> ${player.equalizer?.active?.length > 0 ? player.equalizer.active.map(f => String(f)).join(`, `) : `${client.allEmojis.x}`}`, inline: true })
         .setAuthor(`${newTrack.title}`, newTrack.thumbnail || null, newTrack.url || null)
         .setThumbnail(newTrack.thumbnail || null)
         .setFooter({ text: `Requested by ${newTrack.requester?.username || "Unknown"}`, iconURL: newTrack.requester?.displayAvatarURL({ dynamic: true }) });
