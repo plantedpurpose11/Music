@@ -30,7 +30,7 @@ try {
 const lavalinkNodes = [{
   host: config.lavalink?.host || "localhost",
   port: config.lavalink?.port || 2333,
-  password: config.lavalink?.password || "youshallnotpass",
+  authorization: config.lavalink?.password || "youshallnotpass",
   secure: config.lavalink?.secure || false,
 }];
 
