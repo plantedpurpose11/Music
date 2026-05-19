@@ -30,31 +30,48 @@ module.exports = {
 			const sourceLabel = source ? ` (${source})` : "";
 			await interaction.reply({ content: `🔍 Searching${sourceLabel}... \`\`\`${Text}\`\`\``, ephemeral: true });
 			try {
+				console.log(`[PLAY] Starting play command for song: ${Text}`);
 				const player = await getOrCreatePlayer(client, guildId, channel.id, channelId, member);
 				
 				// Debug logging
-				console.log(`[PLAY] Player created, manager initiated:`, client.manager?.initiated);
-				console.log(`[PLAY] Player playing:`, player.playing, "paused:", player.paused);
+				console.log(`[PLAY] Player state after creation:`);
+				console.log(`[PLAY]   - manager initiated:`, client.manager?.initiated);
+				console.log(`[PLAY]   - player.playing:`, player.playing);
+				console.log(`[PLAY]   - player.paused:`, player.paused);
+				console.log(`[PLAY]   - player.connected:`, player.connected);
+				console.log(`[PLAY]   - player.state:`, player.state);
+				console.log(`[PLAY]   - player.voiceChannelId:`, player.voiceChannelId);
 				
 				const { track, result } = await searchTrack(player, Text, member, source);
 				if (!track)
 					return interaction.editReply({ content: `${client.allEmojis.x} No results found!`, ephemeral: true });
 				
+				console.log(`[PLAY] Track found: ${trackTitle(track)}`);
+				
 				if (result && (result.loadType === "playlist" || result.loadType === "PLAYLIST_LOADED")) {
+					console.log(`[PLAY] Adding playlist with ${result.tracks.length} tracks`);
 					for (const t of result.tracks) { t.requester = member; await player.queue.add(t); }
 				} else {
+					console.log(`[PLAY] Adding single track`);
 					track.requester = member; await player.queue.add(track);
 				}
 				
-				// FIX: Always call play() if the player isn't already playing
+				console.log(`[PLAY] Queue size after add: ${player.queue.tracks.length}`);
+				console.log(`[PLAY] About to call player.play()`);
+				
+				// FIX: Always call play() if not already playing
 				if (!player.playing) {
-					console.log(`[PLAY] Calling player.play()`);
+					console.log(`[PLAY] Player not playing, calling play()`);
 					await player.play();
+					console.log(`[PLAY] play() completed`);
+					console.log(`[PLAY] After play() - player.playing:`, player.playing);
+				} else {
+					console.log(`[PLAY] Player already playing, skipping play() call`);
 				}
 				
 				interaction.editReply({ content: `${player.queue.tracks.length > 0 ? "👍 Added" : "🎶 Now Playing"}${sourceLabel}: \`\`\`css\n${trackTitle(track)}\n\`\`\``, ephemeral: true });
 			} catch (e) {
-				console.log(e.stack ? e.stack : e)
+				console.error(`[PLAY] Error:`, e);
 				interaction.editReply({ content: `${client.allEmojis.x} | Error: `, embeds: [new MessageEmbed().setColor(ee.wrongcolor).setDescription(`\`\`\`${e}\`\`\``)], ephemeral: true })
 			}
 		} catch (e) { console.log(String(e.stack).bgRed) }

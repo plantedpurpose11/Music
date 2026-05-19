@@ -25,9 +25,22 @@ async function getOrCreatePlayer(client, guildId, voiceChannelId, textChannelId)
       selfDeaf: true,
       selfMute: false,
     });
-    console.log(`[PlayerHelper] Connecting player to voice channel`);
-    await player.connect();
-    console.log(`[PlayerHelper] Player connected, player.connected:`, player.connected);
+    console.log(`[PlayerHelper] Player created, now connecting...`);
+    try {
+      await player.connect();
+      console.log(`[PlayerHelper] Player connected successfully`);
+      console.log(`[PlayerHelper] player.connected:`, player.connected);
+      console.log(`[PlayerHelper] player.state:`, player.state);
+      
+      // Wait a bit for the connection to fully establish
+      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log(`[PlayerHelper] After 500ms - player.connected:`, player.connected);
+    } catch (e) {
+      console.error(`[PlayerHelper] Failed to connect player:`, e);
+      throw e;
+    }
+  } else {
+    console.log(`[PlayerHelper] Player already exists for guild: ${guildId}`);
   }
   return player;
 }
