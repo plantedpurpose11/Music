@@ -11,6 +11,23 @@ function getPlayer(client, guildId) {
 }
 
 /**
+ * Wait for player to be ready (voice connection established)
+ */
+async function waitForPlayerReady(player, maxWaitTime = 5000) {
+  const startTime = Date.now();
+  while (Date.now() - startTime < maxWaitTime) {
+    if (player.connected && player.state !== undefined) {
+      console.log(`[PlayerHelper] Player ready! connected: ${player.connected}, state: ${player.state}`);
+      return true;
+    }
+    console.log(`[PlayerHelper] Waiting for player to be ready... connected: ${player.connected}, state: ${player.state}`);
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+  console.warn(`[PlayerHelper] Timeout waiting for player to be ready. connected: ${player.connected}, state: ${player.state}`);
+  return false;
+}
+
+/**
  * Get or create a player for the guild + voice channel.
  * Returns the player (already connected to voice).
  */
@@ -28,13 +45,14 @@ async function getOrCreatePlayer(client, guildId, voiceChannelId, textChannelId)
     console.log(`[PlayerHelper] Player created, now connecting...`);
     try {
       await player.connect();
-      console.log(`[PlayerHelper] Player connected successfully`);
-      console.log(`[PlayerHelper] player.connected:`, player.connected);
-      console.log(`[PlayerHelper] player.state:`, player.state);
+      console.log(`[PlayerHelper] player.connect() returned`);
+      console.log(`[PlayerHelper] Immediate state - connected: ${player.connected}, state: ${player.state}`);
       
-      // Wait a bit for the connection to fully establish
-      await new Promise(resolve => setTimeout(resolve, 500));
-      console.log(`[PlayerHelper] After 500ms - player.connected:`, player.connected);
+      // Wait for the player to be fully ready
+      const isReady = await waitForPlayerReady(player);
+      if (!isReady) {
+        console.warn(`[PlayerHelper] Player may not be fully ready, but proceeding anyway`);
+      }
     } catch (e) {
       console.error(`[PlayerHelper] Failed to connect player:`, e);
       throw e;
