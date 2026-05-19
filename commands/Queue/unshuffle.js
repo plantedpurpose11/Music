@@ -1,118 +1,45 @@
-const {
-	MessageEmbed,
-	Message
-} = require("discord.js");
-const config = require("../../botconfig/config.json");
+const { MessageEmbed } = require("discord.js");
 const ee = require("../../botconfig/embed.json");
-const settings = require("../../botconfig/settings.json");
-const {
-	check_if_dj
-} = require("../../handlers/functions")
+const { check_if_dj } = require("../../handlers/functions");
+const { getPlayer, currentTrack } = require("../../handlers/playerHelpers");
 module.exports = {
-	name: "unshuffle", //the command name for the Slash Command
-
+	name: "unshuffle",
 	category: "Queue",
-	aliases: ["mix"],
 	usage: "unshuffle",
-
-	description: "Un-Shuffles (Mixes) The Queue", //the command description for Slash Command Overview
-	cooldown: 10,
-	requiredroles: [], //Only allow specific Users with a Role to execute a Command [OPTIONAL]
-	alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL]
+	description: "Restores the Queue order before shuffling",
+	cooldown: 5,
+	requiredroles: [],
+	alloweduserids: [],
 	run: async (client, message, args) => {
 		try {
-			//things u can directly access in an interaction!
-			const {
-				member,
-				channelId,
-				guildId,
-				applicationId,
-				commandName,
-				deferred,
-				replied,
-				ephemeral,
-				options,
-				id,
-				createdTimestamp
-			} = message;
-			const {
-				guild
-			} = member;
-			const {
-				channel
-			} = member.voice;
-			if (!channel) return message.reply({
-				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
-				],
-
-			})
-			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
-				return message.reply({
-					embeds: [new MessageEmbed()
-						.setColor(ee.wrongcolor)
-						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-						.setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`)
-						.setDescription(`<#${guild.members.me.voice.channel.id}>`)
-					],
-				});
-			}
+			const { member, channelId, guildId } = message;
+			const { guild } = member;
+			const { channel } = member.voice;
+			if (!channel) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "my" : "a"} VoiceChannel First!**`)] })
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id)
+				return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`).setDescription(`<#${guild.members.me.voice.channel.id}>`)] });
 			try {
-				let newQueue = client.distube.getQueue(guildId);
-				if (!newQueue || !newQueue.songs || newQueue.songs.length == 0) return message.reply({
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)
-					],
-				})
-				if (check_if_dj(client, member, newQueue.songs[0])) {
-					return message.reply({
-						embeds: [new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`)
-							.setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, newQueue.songs[0])}`)
-						],
-					});
+				let player = getPlayer(client, guildId);
+				const cur = currentTrack(player);
+				if (!player || !cur) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)] })
+				if (check_if_dj(client, member, cur))
+					return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`).setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, cur)}`)] });
+				
+				const savedOrder = client.maps.get(`beforeshuffle-${guildId}`);
+				if (!savedOrder) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **No shuffle history found!**`)] });
+				
+				// Clear current queue and restore saved order
+				if (player.queue.tracks.length > 0) await player.queue.splice(0, player.queue.tracks.length);
+				for (const track of savedOrder) {
+					await player.queue.add(track);
 				}
-				if(!client.maps.has(`beforeshuffle-${newQueue.id}`)) {
-					return message.reply({
-						embeds: [
-							new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **There was no shuffle before!**`)
-						],
-					})
-				}
-				newQueue.songs = [newQueue.songs[0], ...client.maps.get(`beforeshuffle-${newQueue.id}`)]
-				client.maps.delete(`beforeshuffle-${newQueue.id}`);
-				message.reply({
-					embeds: [new MessageEmbed()
-					  .setColor(ee.color)
-					  .setTimestamp()
-					  .setTitle(`🔀 **__UN__ - Suffled ${newQueue.songs.length} Songs!**`)
-					  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
-				})
+				client.maps.delete(`beforeshuffle-${guildId}`);
+				
+				message.reply({ embeds: [new MessageEmbed().setColor(ee.color).setTimestamp().setTitle(`🔀 **Unshuffled the Queue!**`).setFooter({ text: `Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })] })
 			} catch (e) {
 				console.log(e.stack ? e.stack : e)
-				message.reply({
-					content: `${client.allEmojis.x} | Error: `,
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor)
-						.setDescription(`\`\`\`${e}\`\`\``)
-					],
-
-				})
+				message.reply({ content: `${client.allEmojis.x} | Error: `, embeds: [new MessageEmbed().setColor(ee.wrongcolor).setDescription(`\`\`\`${e}\`\`\``)] })
 			}
-		} catch (e) {
-			console.log(String(e.stack).bgRed)
-		}
+		} catch (e) { console.log(String(e.stack).bgRed) }
 	}
 }
-/**
- * @INFO
- * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * @INFO
- * Work for Milrato Development | https://milrato.eu
- * @INFO
- * Please mention Him / Milrato Development, when using this Code!
- * @INFO
- */
-

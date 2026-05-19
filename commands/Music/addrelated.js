@@ -1,134 +1,70 @@
-const {
-        MessageEmbed,
-        Message
-} = require("discord.js");
-const config = require("../../botconfig/config.json");
+const { MessageEmbed } = require("discord.js");
 const ee = require("../../botconfig/embed.json");
-const settings = require("../../botconfig/settings.json");
+const { getPlayer, currentTrack, trackTitle, trackAuthor } = require("../../handlers/playerHelpers");
 module.exports = {
-        name: "addrelated", //the command name for the Slash Command
+	name: "addrelated",
+	category: "Music",
+	usage: "addrelated",
+	description: "Add a similar/related song to the current Song!",
+	cooldown: 2,
+	requiredroles: [],
+	alloweduserids: [],
+	run: async (client, message, args) => {
+		try {
+			const { member, channelId, guildId } = message;
+			const { guild } = member;
+			const { channel } = member.voice;
 
-        category: "Music",
-        usage: "addrelated",
+			if (!channel) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)] })
+			if (channel.userLimit != 0 && channel.full)
+				return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} Your Voice Channel is full, I can't join!`)] });
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id)
+				return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} I am already connected somewhere else`)] });
 
-        description: "Add a similar/related song to the current Song!", //the command description for Slash Command Overview
-        cooldown: 2,
-        requiredroles: [], //Only allow specific Users with a Role to execute a Command [OPTIONAL]
-        alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL]
-        run: async (client, message, args) => {
-                try {
-                        const { member, channelId, guildId } = message;
-                        const { guild } = member;
-                        const { channel } = member.voice;
+			try {
+				let player = getPlayer(client, guildId);
+				const cur = currentTrack(player);
+				if (!player || !cur) {
+					return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)] })
+				}
 
-                        if (!channel) return message.reply({
-                                embeds: [
-                                        new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
-                                ],
-                        })
-                        
-                        if (channel.userLimit != 0 && channel.full)
-                                return message.reply({
-                                        embeds: [new MessageEmbed()
-                                                .setColor(ee.wrongcolor)
-                                                .setFooter({ text: ee.footertext, iconURL: ee.footericon })
-                                                .setTitle(`${client.allEmojis.x} Your Voice Channel is full, I can't join!`)
-                                        ],
-                                });
-                                
-                        if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
-                                return message.reply({
-                                        embeds: [new MessageEmbed()
-                                                .setColor(ee.wrongcolor)
-                                                .setFooter({ text: ee.footertext, iconURL: ee.footericon })
-                                                .setTitle(`${client.allEmojis.x} I am already connected somewhere else`)
-                                        ],
-                                });
-                        }
+				let thenewmsg = await message.reply({
+					content: `🔍 Searching Related Song for... **${trackTitle(cur)}**`,
+				}).catch(e => { console.log(e) })
 
-                        try {
-                                let player = client.manager?.players?.get(guildId);
-                                if (!player || !player.queue || player.queue.length == 0) {
-                                        return message.reply({
-                                                embeds: [
-                                                        new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)
-                                                ],
-                                        })
-                                }
+				const result = await player.search({ query: `ytsearch:${trackAuthor(cur)} ${trackTitle(cur)}` }, member);
+				
+				if (!result.tracks || result.tracks.length <= 1) {
+					return thenewmsg.edit({ content: `${client.allEmojis.x} No related songs found!` }).catch(() => {})
+				}
 
-                                // Get current song
-                                const currentSong = player.queue[0];
-                                
-                                //update it without a response!
-                                let thenewmsg = await message.reply({
-                                        content: `🔍 Searching Related Song for... **${currentSong.title}**`,
-                                }).catch(e => {
-                                        console.log(e)
-                                })
+				const curUri = cur.info?.uri || "";
+				let relatedTrack = null;
+				for (let i = 1; i < result.tracks.length; i++) {
+					if ((result.tracks[i].info?.uri || "") !== curUri) {
+						relatedTrack = result.tracks[i];
+						break;
+					}
+				}
+				
+				if (!relatedTrack) {
+					return thenewmsg.edit({ content: `${client.allEmojis.x} No different related songs found!` }).catch(() => {})
+				}
 
-                                // Search for related tracks using the current song's info
-                                const node = [...client.manager?.nodeManager?.nodes?.values()][0];
-                                if (!node) {
-                                        return message.reply({
-                                                content: `${client.allEmojis.x} No Lavalink node available!`,
-                                                embeds: []
-                                        });
-                                }
+				relatedTrack.requester = member;
+				await player.queue.add(relatedTrack);
+				
+				if (!player.playing && !player.paused) {
+					await player.play();
+				}
 
-                                // Search with the current song name to find related tracks
-                                const result = await node.search(`ytsearch:${currentSong.author} ${currentSong.title}`);
-                                
-                                if (!result.tracks || result.tracks.length <= 1) {
-                                        return thenewmsg.edit({
-                                                content: `${client.allEmojis.x} No related songs found!`,
-                                        }).catch(e => {})
-                                }
-
-                                // Get a different track from the results (skip the first one since it's the current song)
-                                let relatedTrack = result.tracks[1];
-                                let attempts = 1;
-                                while (relatedTrack.uri === currentSong.uri && attempts < result.tracks.length) {
-                                        relatedTrack = result.tracks[attempts++];
-                                }
-                                
-                                if (attempts >= result.tracks.length) {
-                                        return thenewmsg.edit({
-                                                content: `${client.allEmojis.x} No different related songs found!`,
-                                        }).catch(e => {})
-                                }
-
-                                // Add the related track to queue
-                                relatedTrack.requester = member;
-                                player.queue.push(relatedTrack);
-                                
-                                // If not playing, start playing
-                                if (!player.playing) {
-                                        player.play(relatedTrack);
-                                }
-
-                                await thenewmsg.edit({
-                                        content: `👍 Added: **${relatedTrack.title}**`,
-                                }).catch(e => {
-                                        console.log(e)
-                                })
-                        } catch (e) {
-                                console.log(e.stack ? e.stack : e)
-                                message.reply({
-                                        content: `${client.allEmojis.x} | Error: `,
-                                        embeds: [
-                                                new MessageEmbed().setColor(ee.wrongcolor)
-                                                .setDescription(`\`\`\`${e}\`\`\``)
-                                        ],
-                                })
-                        }
-                } catch (e) {
-                        console.log(String(e.stack).bgRed)
-                }
-        }
+				await thenewmsg.edit({ content: `👍 Added: **${trackTitle(relatedTrack)}**` }).catch(() => {})
+			} catch (e) {
+				console.log(e.stack ? e.stack : e)
+				message.reply({ content: `${client.allEmojis.x} | Error: `, embeds: [new MessageEmbed().setColor(ee.wrongcolor).setDescription(`\`\`\`${e}\`\`\``)] })
+			}
+		} catch (e) {
+			console.log(String(e.stack).bgRed)
+		}
+	}
 }
-/**
- * @INFO
- * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * Migrated to use Lavalink
- * @INFO
- */

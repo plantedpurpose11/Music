@@ -1,24 +1,16 @@
-const {
-	MessageEmbed,
-	Message
-} = require("discord.js");
-const config = require("../../botconfig/config.json");
+const { MessageEmbed } = require("discord.js");
 const ee = require("../../botconfig/embed.json");
-const settings = require("../../botconfig/settings.json");
-const {
-	check_if_dj
-} = require("../../handlers/functions")
+const { check_if_dj } = require("../../handlers/functions");
+const { getOrCreatePlayer, getPlayer, searchTrack, trackTitle, currentTrack } = require("../../handlers/playerHelpers");
 module.exports = {
-	name: "playskip", //the command name for the Slash Command
-
+	name: "playskip",
 	category: "Music",
 	aliases: ["ps"],
 	usage: "playskip <Search/link>",
-
-	description: "Plays a Song/Playlist and skips!", //the command description for Slash Command Overview
+	description: "Plays a Song/Playlist and skips!",
 	cooldown: 2,
-	requiredroles: [], //Only allow specific Users with a Role to execute a Command [OPTIONAL]
-	alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL]
+	requiredroles: [],
+	alloweduserids: [],
 	run: async (client, message, args) => {
 		try {
 			const { member, channelId, guildId } = message;
@@ -26,132 +18,50 @@ module.exports = {
 			const { channel } = member.voice;
 
 			if (!channel) return message.reply({
-				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
-				],
+				embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)],
 			})
-			
 			if (channel.userLimit != 0 && channel.full)
-				return message.reply({
-					embeds: [new MessageEmbed()
-						.setColor(ee.wrongcolor)
-						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-						.setTitle(`${client.allEmojis.x} Your Voice Channel is full, I can't join!`)
-					],
-				});
-				
-			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
-				return message.reply({
-					embeds: [new MessageEmbed()
-						.setColor(ee.wrongcolor)
-						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-						.setTitle(`${client.allEmojis.x} I am already connected somewhere else`)
-					],
-				});
-			}
-			
-			if (!args[0]) {
-				return message.reply({
-					embeds: [new MessageEmbed()
-						.setColor(ee.wrongcolor)
-						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-						.setTitle(`${client.allEmojis.x} **Please add a Search Query!**`)
-						.setDescription(`**Usage:**\n> \`${client.settings.get(message.guild.id, "prefix")}playskip <Search/Link>\``)
-					],
-				});
-			}
+				return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} Your Voice Channel is full, I can't join!`)] });
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id)
+				return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} I am already connected somewhere else`)] });
+			if (!args[0])
+				return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} **Please add a Search Query!**`).setDescription(`**Usage:**\n> \`${client.settings.get(message.guild.id, "prefix")}playskip <Search/Link>\``)] });
 
 			const Text = args.join(" ");
-			let newmsg = await message.reply({
-				content: `🔍 Searching... \`\`\`${Text}\`\`\``,
-			}).catch(e => {
-				console.log(e)
-			})
+			let newmsg = await message.reply({ content: `🔍 Searching... \`\`\`${Text}\`\`\`` }).catch(e => { console.log(e) })
 
 			try {
-				let player = client.manager?.players?.get(guildId);
+				let player = getPlayer(client, guildId);
 				
-				// Check DJ if there's a queue
-				if (player && player.queue && player.queue.length > 0) {
-					if (check_if_dj(client, member, player.queue[0])) {
-						return message.reply({
-							embeds: [new MessageEmbed()
-								.setColor(ee.wrongcolor)
-								.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-								.setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`)
-								.setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, player.queue[0])}`)
-							],
-						});
+				if (player) {
+					const cur = currentTrack(player);
+					if (cur && check_if_dj(client, member, cur)) {
+						return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`).setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, cur)}`)] });
 					}
 				}
 
-				if (!player) {
-					player = client.manager.createPlayer(guildId, { voiceChannelId: channel.id });
-					player.connect({ deafen: true });
-				}
+				player = getOrCreatePlayer(client, guildId, channel.id, channelId);
 				
-				const node = [...client.manager?.nodeManager?.nodes?.values()][0];
-				if (!node) {
-					return message.reply({
-						content: `${client.allEmojis.x} No Lavalink node available!`,
-						embeds: []
-					});
-				}
-				
-				// Try multiple sources for fallback
-				const sources = ['ytsearch', 'scsearch', 'bcsearch'];
-				let result = null;
-				let track = null;
+				const { track } = await searchTrack(player, Text, member);
+				if (!track) return newmsg.edit({ content: `${client.allEmojis.x} No tracks found!` }).catch(() => {});
 
-				for (const source of sources) {
-					try {
-						result = await node.search(`${source}:${Text}`, message.author?.id);
-						if (result.tracks && result.tracks.length > 0) {
-							track = result.tracks[0];
-							break;
-						}
-					} catch (e) {
-						console.log(`Search [${source}] error:`, e.message);
-					}
-				}
-
-				if (!track) {
-					return message.reply({
-						content: `${client.allEmojis.x} No tracks found!`,
-						embeds: []
-					});
-				}
 				track.requester = member;
 				
-				player.textChannel = channelId;
-				
 				// Add to front of queue and skip
-				player.queue.unshift(track);
-				player.stop();
+				await player.queue.add(track, 0);
+				if (player.playing) {
+					await player.skip();
+				} else {
+					await player.play();
+				}
 				
-				newmsg.edit({
-					content: `⏭ Skipped to: \`\`\`css\n${Text}\n\`\`\``,
-				}).catch(e => {
-					console.log(e)
-				})
+				newmsg.edit({ content: `⏭ Skipped to: **${trackTitle(track)}**` }).catch(() => {})
 			} catch (e) {
 				console.log(e.stack ? e.stack : e)
-				message.reply({
-					content: `${client.allEmojis.x} | Error: `,
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor)
-						.setDescription(`\`\`\`${e}\`\`\``)
-					],
-				})
+				message.reply({ content: `${client.allEmojis.x} | Error: `, embeds: [new MessageEmbed().setColor(ee.wrongcolor).setDescription(`\`\`\`${e}\`\`\``)] })
 			}
 		} catch (e) {
 			console.log(String(e.stack).bgRed)
 		}
 	}
 }
-/**
- * @INFO
- * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * Migrated to use Lavalink
- * @INFO
- */
