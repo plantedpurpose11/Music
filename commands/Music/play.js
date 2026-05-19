@@ -5,17 +5,16 @@ const {
 const config = require("../../botconfig/config.json");
 const ee = require("../../botconfig/embed.json");
 const settings = require("../../botconfig/settings.json");
+const { getOrCreatePlayer, searchTrack, trackTitle } = require("../../handlers/playerHelpers");
 module.exports = {
-	name: "play", //the command name for the Slash Command
-
+	name: "play",
 	category: "Music",
 	aliases: ["p", "paly", "pley"],
 	usage: "play <Search/link>",
-
-	description: "Plays a Song/Playlist in your VoiceChannel", //the command description for Slash Command Overview
+	description: "Plays a Song/Playlist in your VoiceChannel",
 	cooldown: 2,
-	requiredroles: [], //Only allow specific Users with a Role to execute a Command [OPTIONAL]
-	alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL]
+	requiredroles: [],
+	alloweduserids: [],
 	run: async (client, message, args) => {
 		try {
 			const { member, channelId, guildId } = message;
@@ -61,76 +60,30 @@ module.exports = {
 			const Text = args.join(" ");
 			let newmsg = await message.reply({
 				content: `🔍 Searching... \`\`\`${Text}\`\`\``,
-			}).catch(e => {
-				console.log(e)
-			})
+			}).catch(e => { console.log(e) })
 
 			try {
-				// Get or create player
-				let player = client.manager?.players?.get(guildId);
+				let player = getOrCreatePlayer(client, guildId, channel.id, channelId);
 				
-				if (!player) {
-					player = client.manager.createPlayer(guildId, { voiceChannelId: channel.id });
-					player.connect({ deafen: true });
-				}
+				const { track } = await searchTrack(player, Text, member);
 				
-				// Search for tracks using Lavalink node
-				const node = [...client.manager?.nodeManager?.nodes?.values()][0];
-				if (!node) {
-					return message.reply({
-						content: `${client.allEmojis.x} No Lavalink node available!`,
-						embeds: []
-					});
-				}
-				
-				// Search with fallback: try YouTube, SoundCloud, Bandcamp
-				const sources = ['ytsearch', 'scsearch', 'bcsearch'];
-				let result = null;
-				let track = null;
-
-				for (const source of sources) {
-					try {
-						result = await node.search(`${source}:${Text}`, message.author?.id);
-						console.log(`Search [${source}]:`, result.loadType);
-						if (result.tracks && result.tracks.length > 0) {
-							track = result.tracks[0];
-							console.log(`Found via ${source}:`, track.info.title);
-							break;
-						}
-					} catch (e) {
-						console.log(`Search [${source}] error:`, e.message);
-					}
-				}
-
 				if (!track) {
-					return message.reply({
-						content: `${client.allEmojis.x} No tracks found on YouTube, SoundCloud, or Bandcamp!`,
-						embeds: []
-					});
+					return newmsg.edit({
+						content: `${client.allEmojis.x} No tracks found!`,
+					}).catch(() => {});
 				}
 
 				track.requester = member;
 				
-				// Add to queue - ensure queue is initialized
-				if (!player.queue) {
-					player.queue = [];
-				}
-				player.queue.push(track);
+				await player.queue.add(track);
 				
-				// Store text channel for now playing messages
-				player.textChannel = channelId;
-				
-				// If not playing, start playing
-				if (!player.playing) {
-					player.play(track);
+				if (!player.playing && !player.paused) {
+					await player.play();
 				}
 				
-				// Update the message
 				newmsg.edit({
-					content: `${player.queue.length > 1 ? "👍 Added" : "🎶 Now Playing"}: \`\`\`css\n${Text}\n\`\`\``,
-				}).catch(e => {
-					console.log(e)
-				})
+					content: `${player.queue.tracks.length > 0 ? "👍 Added to queue" : "🎶 Now Playing"}: **${trackTitle(track)}**`,
+				}).catch(() => {})
 			} catch (e) {
 				console.log(e.stack ? e.stack : e)
 				message.reply({
@@ -146,9 +99,3 @@ module.exports = {
 		}
 	}
 }
-/**
- * @INFO
- * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * Migrated to use Lavalink
- * @INFO
- */

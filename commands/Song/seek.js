@@ -1,127 +1,44 @@
-const {
-	MessageEmbed,
-	Message
-} = require("discord.js");
-const config = require("../../botconfig/config.json");
+const { MessageEmbed } = require("discord.js");
 const ee = require("../../botconfig/embed.json");
-const settings = require("../../botconfig/settings.json");
-const {
-	check_if_dj
-} = require("../../handlers/functions")
+const { check_if_dj } = require("../../handlers/functions");
+const { getPlayer, currentTrack, trackDuration } = require("../../handlers/playerHelpers");
 module.exports = {
-	name: "seek", //the command name for the Slash Command
+	name: "seek",
 	category: "Song",
-	usage: "seek <TimeInSec>",
-	aliases: ["sek"],
-	description: "Jumps to a specific Position in the Song", //the command description for Slash Command Overview
-	cooldown: 10,
-	requiredroles: [], //Only allow specific Users with a Role to execute a Command [OPTIONAL]
-	alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL]
-
+	usage: "seek <Seconds>",
+	description: "Seeks to a specific position in the Song",
+	cooldown: 5,
+	requiredroles: [],
+	alloweduserids: [],
 	run: async (client, message, args) => {
 		try {
-			//things u can directly access in an interaction!
-			const {
-				member,
-				channelId,
-				guildId,
-				applicationId,
-				commandName,
-				deferred,
-				replied,
-				ephemeral,
-				options,
-				id,
-				createdTimestamp
-			} = message;
-			const {
-				guild
-			} = member;
-			const {
-				channel
-			} = member.voice;
-			if (!channel) return message.reply({
-				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
-				],
-
-			})
-			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
-				return message.reply({
-					embeds: [new MessageEmbed()
-						.setColor(ee.wrongcolor)
-						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-						.setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`)
-						.setDescription(`<#${guild.members.me.voice.channel.id}>`)
-					],
-				});
-			}
+			const { member, channelId, guildId } = message;
+			const { guild } = member;
+			const { channel } = member.voice;
+			if (!channel) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "my" : "a"} VoiceChannel First!**`)] })
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id)
+				return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`).setDescription(`<#${guild.members.me.voice.channel.id}>`)] });
 			try {
-				let newQueue = client.distube.getQueue(guildId);
-				if (!newQueue || !newQueue.songs || newQueue.songs.length == 0) return message.reply({
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)
-					],
-
-				})
-				if (!args[0]) {
-					return message.reply({
-						embeds: [
-							new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x} **Please add a Seek Number Position-Duration!**`)
-							.setDescription(`**Usage:**\n> \`${client.settings.get(guild.id, "prefix")}seek <Duration_in_Sec>\``)
-						],
-					})
-				}
-				let seekNumber = Number(args[0])
-				if (seekNumber > newQueue.songs[0].duration || seekNumber < 0) return message.reply({
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **The Seek Position must be between \`0\` and \`${newQueue.songs[0].duration}\`!**`)
-					],
-
-				})
-				if (check_if_dj(client, member, newQueue.songs[0])) {
-					return message.reply({
-						embeds: [new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`)
-							.setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, newQueue.songs[0])}`)
-						],
-					});
-				}
-				await newQueue.seek(seekNumber);
-				message.reply({
-					embeds: [new MessageEmbed()
-					  .setColor(ee.color)
-					  .setTimestamp()
-					  .setTitle(`⏺ **Seeked to \`${seekNumber} Seconds\`!**`)
-					  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
-				})
+				let player = getPlayer(client, guildId);
+				const cur = currentTrack(player);
+				if (!player || !cur) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)] })
+				
+				let seekNumber = Number(args[0]);
+				if (isNaN(seekNumber)) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please provide a valid number of Seconds!**`)] });
+				
+				const durationSec = Math.floor(trackDuration(cur) / 1000);
+				if (seekNumber > durationSec || seekNumber < 0) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **The Seek Position must be between \`0\` and \`${durationSec}\`!**`)] });
+				
+				if (check_if_dj(client, member, cur))
+					return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`).setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, cur)}`)] });
+				
+				await player.seek(seekNumber * 1000);
+				
+				message.reply({ embeds: [new MessageEmbed().setColor(ee.color).setTimestamp().setTitle(`⏩ **Seeked to \`${seekNumber}s\`!**`).setFooter({ text: `Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })] })
 			} catch (e) {
 				console.log(e.stack ? e.stack : e)
-				message.reply({
-					content: `${client.allEmojis.x} | Error: `,
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor)
-						.setDescription(`\`\`\`${e}\`\`\``)
-					],
-
-				})
+				message.reply({ content: `${client.allEmojis.x} | Error: `, embeds: [new MessageEmbed().setColor(ee.wrongcolor).setDescription(`\`\`\`${e}\`\`\``)] })
 			}
-		} catch (e) {
-			console.log(String(e.stack).bgRed)
-		}
+		} catch (e) { console.log(String(e.stack).bgRed) }
 	}
 }
-/**
- * @INFO
- * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * @INFO
- * Work for Milrato Development | https://milrato.eu
- * @INFO
- * Please mention Him / Milrato Development, when using this Code!
- * @INFO
- */

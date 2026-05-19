@@ -1,128 +1,42 @@
-const {
-	MessageEmbed,
-	Message
-} = require("discord.js");
-const config = require("../../botconfig/config.json");
+const { MessageEmbed } = require("discord.js");
 const ee = require("../../botconfig/embed.json");
-const settings = require("../../botconfig/settings.json");
-const {
-	check_if_dj
-} = require("../../handlers/functions")
+const { check_if_dj } = require("../../handlers/functions");
+const { getPlayer, currentTrack } = require("../../handlers/playerHelpers");
 module.exports = {
-	name: "jump", //the command name for the Slash Command
-
+	name: "jump",
 	category: "Queue",
-	aliases: ["jump", "skipto"],
-	usage: "jump <SongPosition>",
-
-	description: "Jumps to a specific Song in the Queue", //the command description for Slash Command Overview
-	cooldown: 10,
-	requiredroles: [], //Only allow specific Users with a Role to execute a Command [OPTIONAL]
-	alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL]
-
+	usage: "jump <Position>",
+	description: "Jumps to a specific position in the Queue",
+	cooldown: 5,
+	requiredroles: [],
+	alloweduserids: [],
 	run: async (client, message, args) => {
 		try {
-			//things u can directly access in an interaction!
-			const {
-				member,
-				channelId,
-				guildId,
-				applicationId,
-				commandName,
-				deferred,
-				replied,
-				ephemeral,
-				options,
-				id,
-				createdTimestamp
-			} = message;
-			const {
-				guild
-			} = member;
-			const {
-				channel
-			} = member.voice;
-			if (!channel) return message.reply({
-				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
-				],
-
-			})
-			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
-				return message.reply({
-					embeds: [new MessageEmbed()
-						.setColor(ee.wrongcolor)
-						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-						.setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`)
-						.setDescription(`<#${guild.members.me.voice.channel.id}>`)
-					],
-				});
-			}
+			const { member, channelId, guildId } = message;
+			const { guild } = member;
+			const { channel } = member.voice;
+			if (!channel) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "my" : "a"} VoiceChannel First!**`)] })
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id)
+				return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`).setDescription(`<#${guild.members.me.voice.channel.id}>`)] });
 			try {
-				let newQueue = client.distube.getQueue(guildId);
-				if (!newQueue || !newQueue.songs || newQueue.songs.length == 0) return message.reply({
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)
-					],
-
-				})
-				if (check_if_dj(client, member, newQueue.songs[0])) {
-					return message.reply({
-						embeds: [new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`)
-							.setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, newQueue.songs[0])}`)
-						],
-					});
-				}
-				if (!args[0]) {
-					return message.reply({
-						embeds: [new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x} **Please add a Position to jump to!**`)
-							.setDescription(`**Usage:**\n> \`${client.settings.get(message.guild.id, "prefix")}jump <position>\``)
-						],
-					});
-				}
-				let Position = Number(args[0])
-				if (Position > newQueue.songs.length - 1 || Position < 0) return message.reply({
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **The Position must be between \`0\` and \`${newQueue.songs.length - 1}\`!**`)
-					],
-
-				})
-				await newQueue.jump(Position);
-				message.reply({
-					embeds: [new MessageEmbed()
-					  .setColor(ee.color)
-					  .setTimestamp()
-					  .setTitle(`👌 **Jumped to the \`${Position}th\` Song in the Queue!**`)
-					  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
-				})
+				let player = getPlayer(client, guildId);
+				const cur = currentTrack(player);
+				if (!player || !cur) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)] })
+				if (check_if_dj(client, member, cur))
+					return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`).setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, cur)}`)] });
+				
+				const Position = parseInt(args[0]);
+				if (isNaN(Position)) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please enter a valid Number!**`)] });
+				if (Position < 1 || Position > player.queue.tracks.length) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **The Position must be between \`1\` and \`${player.queue.tracks.length}\`!**`)] });
+				
+				// Skip to the position (skip removes tracks before it)
+				await player.skip(Position);
+				
+				message.reply({ embeds: [new MessageEmbed().setColor(ee.color).setTimestamp().setTitle(`⏭ **Jumped to Position \`${Position}\`!**`).setFooter({ text: `Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })] })
 			} catch (e) {
 				console.log(e.stack ? e.stack : e)
-				message.reply({
-					content: `${client.allEmojis.x} | Error: `,
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor)
-						.setDescription(`\`\`\`${e}\`\`\``)
-					],
-
-				})
+				message.reply({ content: `${client.allEmojis.x} | Error: `, embeds: [new MessageEmbed().setColor(ee.wrongcolor).setDescription(`\`\`\`${e}\`\`\``)] })
 			}
-		} catch (e) {
-			console.log(String(e.stack).bgRed)
-		}
+		} catch (e) { console.log(String(e.stack).bgRed) }
 	}
 }
-/**
- * @INFO
- * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * @INFO
- * Work for Milrato Development | https://milrato.eu
- * @INFO
- * Please mention Him / Milrato Development, when using this Code!
- * @INFO
- */

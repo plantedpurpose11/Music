@@ -1,152 +1,55 @@
-const {
-	MessageEmbed,
-	Message
-} = require("discord.js");
-const config = require("../../botconfig/config.json");
+const { MessageEmbed } = require("discord.js");
 const ee = require("../../botconfig/embed.json");
-const settings = require("../../botconfig/settings.json");
-const {
-	check_if_dj
-} = require("../../handlers/functions")
+const { check_if_dj } = require("../../handlers/functions");
+const { getPlayer, currentTrack } = require("../../handlers/playerHelpers");
 module.exports = {
-	name: "loop", //the command name for the Slash Command
-
+	name: "loop",
 	category: "Queue",
-	aliases: ["repeat", "repeatmode", "l"],
-	usage: "loop <song/queue/off>",
-
-	description: "Enable/Disable the Song- / Queue-Loop", //the command description for Slash Command Overview
+	aliases: ["repeat"],
+	usage: "loop <off/song/queue>",
+	description: "Toggles the Loop Mode",
 	cooldown: 5,
-	requiredroles: [], //Only allow specific Users with a Role to execute a Command [OPTIONAL]
-	alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL]
+	requiredroles: [],
+	alloweduserids: [],
 	run: async (client, message, args) => {
 		try {
-			//things u can directly access in an interaction!
-			const {
-				member,
-				channelId,
-				guildId,
-				applicationId,
-				commandName,
-				deferred,
-				replied,
-				ephemeral,
-				options,
-				id,
-				createdTimestamp
-			} = message;
-			const {
-				guild
-			} = member;
-			const {
-				channel
-			} = member.voice;
-			if (!channel) return message.reply({
-				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
-				],
-
-			})
-			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
-				return message.reply({
-					embeds: [new MessageEmbed()
-						.setColor(ee.wrongcolor)
-						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-						.setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`)
-						.setDescription(`<#${guild.members.me.voice.channel.id}>`)
-					],
-				});
-			}
+			const { member, channelId, guildId } = message;
+			const { guild } = member;
+			const { channel } = member.voice;
+			if (!channel) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "my" : "a"} VoiceChannel First!**`)] })
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id)
+				return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`).setDescription(`<#${guild.members.me.voice.channel.id}>`)] });
 			try {
-				let newQueue = client.distube.getQueue(guildId);
-				if (!newQueue || !newQueue.songs || newQueue.songs.length == 0) return message.reply({
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)
-					],
-
-				})
-				if (check_if_dj(client, member, newQueue.songs[0])) {
-					return message.reply({
-						embeds: [new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`)
-							.setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, newQueue.songs[0])}`)
-						],
-					});
+				let player = getPlayer(client, guildId);
+				const cur = currentTrack(player);
+				if (!player || !cur) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)] })
+				if (check_if_dj(client, member, cur))
+					return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`).setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, cur)}`)] });
+				
+				const loopArg = args[0]?.toLowerCase();
+				let mode;
+				if (loopArg === "off" || loopArg === "0" || loopArg === "none") mode = "off";
+				else if (loopArg === "song" || loopArg === "track" || loopArg === "1") mode = "track";
+				else if (loopArg === "queue" || loopArg === "all" || loopArg === "2") mode = "queue";
+				else {
+					// Cycle through modes
+					if (player.repeatMode === "off") mode = "track";
+					else if (player.repeatMode === "track") mode = "queue";
+					else mode = "off";
 				}
-				if (!args[0]) {
-					return message.reply({
-						embeds: [new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x} **Please add valid Options!**`)
-							.setDescription(`**Usage:**\n> \`${client.settings.get(message.guild.id, "prefix")}loop <song/queue/off>\``)
-						],
-					});
-				}
-				let loop = String(args[0])
-				if (!["off", "song", "queue"].includes(loop.toLowerCase())) {
-					return message.reply({
-						embeds: [new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x} **Please add valid Options!**`)
-							.setDescription(`**Usage:**\n> \`${client.settings.get(message.guild.id, "prefix")}loop <song/queue/off>\``)
-						],
-					});
-				}
-				if (loop.toLowerCase() == "off") loop = 0;
-				else if (loop.toLowerCase() == "song") loop = 1;
-				else if (loop.toLowerCase() == "queue") loop = 2;
-				await newQueue.setRepeatMode(loop);
-				if (newQueue.repeatMode == 0) {
-					message.reply({
-						embeds: [new MessageEmbed()
-						  .setColor(ee.color)
-						  .setTimestamp()
-						  .setTitle(`${client.allEmojis.x} **Disabled the Loop Mode!**`)
-						  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
-					})
-				} else if (newQueue.repeatMode == 1) {
-					message.reply({
-						embeds: [new MessageEmbed()
-						  .setColor(ee.color)
-						  .setTimestamp()
-						  .setTitle(`🔁 **Enabled the __Song__-Loop** ||(Disabled the **Queue-Loop**)||`)
-						  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
-						})
-				} else {
-					message.reply({
-						embeds: [new MessageEmbed()
-						  .setColor(ee.color)
-						  .setTimestamp()
-						  .setTitle(`🔂 **Enabled the __Queue__-Loop!** ||(Disabled the **Song-Loop**)||`)
-						  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
-						})
-				}
+				
+				await player.setRepeatMode(mode);
+				
+				let title;
+				if (mode === "off") title = `${client.allEmojis.x} **Disabled** Loop!`;
+				else if (mode === "track") title = `🔂 **Enabled Song** Loop!`;
+				else title = `🔁 **Enabled Queue** Loop!`;
+				
+				message.reply({ embeds: [new MessageEmbed().setColor(ee.color).setTimestamp().setTitle(title).setFooter({ text: `Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })] })
 			} catch (e) {
 				console.log(e.stack ? e.stack : e)
-				message.reply({
-					content: `${client.allEmojis.x} | Error: `,
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor)
-						.setDescription(`\`\`\`${e}\`\`\``)
-					],
-
-				})
+				message.reply({ content: `${client.allEmojis.x} | Error: `, embeds: [new MessageEmbed().setColor(ee.wrongcolor).setDescription(`\`\`\`${e}\`\`\``)] })
 			}
-		} catch (e) {
-			console.log(String(e.stack).bgRed)
-		}
+		} catch (e) { console.log(String(e.stack).bgRed) }
 	}
 }
-/**
- * @INFO
- * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * @INFO
- * Work for Milrato Development | https://milrato.eu
- * @INFO
- * Please mention Him / Milrato Development, when using this Code!
- * @INFO
- */

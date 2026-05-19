@@ -1,128 +1,54 @@
-const {
-	MessageEmbed,
-	Message
-} = require("discord.js");
-const config = require("../../botconfig/config.json");
+const { MessageEmbed } = require("discord.js");
 const ee = require("../../botconfig/embed.json");
-const settings = require("../../botconfig/settings.json");
-const {
-	check_if_dj
-} = require("../../handlers/functions")
-const FiltersSettings = require("../../botconfig/filters.json");
+const { check_if_dj } = require("../../handlers/functions");
+const { getPlayer, currentTrack } = require("../../handlers/playerHelpers");
 module.exports = {
-	name: "custombassboost", //the command name for the Slash Command
-
+	name: "custombassboost",
 	category: "Filter",
-	usage: "custombassboost <Gain (0-20)>",
-	aliases: ["bassboost", "bb", "bass", "custombass", "cbassboost", "cbass", "cbb", "custombb"],
-
-	description: "Sets a custom Bassboost with Gain!", //the command description for Slash Command Overview
+	aliases: ["cbb"],
+	usage: "custombassboost <gain (1-20)>",
+	description: "Sets a custom bass boost level",
 	cooldown: 5,
-	requiredroles: [], //Only allow specific Users with a Role to execute a Command [OPTIONAL]
-	alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL]
+	requiredroles: [],
+	alloweduserids: [],
 	run: async (client, message, args) => {
 		try {
-			const {
-				member,
-				guildId,
-				guild
-			} = message;
-			const {
-				channel
-			} = member.voice;
-			if (!channel) return message.reply({
-				embeds: [
-					new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "__my__" : "a"} VoiceChannel First!**`)
-				],
-
-			})
-			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id) {
-				return message.reply({
-					embeds: [new MessageEmbed()
-						.setColor(ee.wrongcolor)
-						.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-						.setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`)
-						.setDescription(`<#${guild.members.me.voice.channel.id}>`)
-					],
-				});
-			}
+			const { member, channelId, guildId } = message;
+			const { guild } = member;
+			const { channel } = member.voice;
+			if (!channel) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join ${guild.members.me.voice.channel ? "my" : "a"} VoiceChannel First!**`)] })
+			if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id != channel.id)
+				return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} Join __my__ Voice Channel!`).setDescription(`<#${guild.members.me.voice.channel.id}>`)] });
 			try {
-				let newQueue = client.distube.getQueue(guildId);
-				if (!newQueue || !newQueue.songs || newQueue.songs.length == 0) return message.reply({
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)
-					],
-
-				})
-				if (check_if_dj(client, member, newQueue.songs[0])) {
-					return message.reply({
-						embeds: [new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x}**You are not a DJ and not the Song Requester!**`)
-							.setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, newQueue.songs[0])}`)
-						],
-					});
-				}
-				if (!args[0]) {
-					return message.reply({
-						embeds: [
-							new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x} **Please add a Bassboost-Gain between 0 and 20!**`)
-						],
-					})
-				}
-				let bass_gain = parseInt(args[0])
-
-				if (bass_gain > 20 || bass_gain < 0) {
-					return message.reply({
-						embeds: [
-							new MessageEmbed()
-							.setColor(ee.wrongcolor)
-							.setFooter({ text: ee.footertext, iconURL: ee.footericon })
-							.setTitle(`${client.allEmojis.x} **The Bassboost Gain must be between 0 and 20!**`)
-						],
-					})
-				}
-				FiltersSettings.custombassboost = `bass=g=${bass_gain},dynaudnorm=f=200`;
-				client.distube.filters = FiltersSettings;
-				//add old filters so that they get removed 	
-				//if it was enabled before then add it
-				if (newQueue.filters.includes("custombassboost")) {
-					await newQueue.setFilter(["custombassboost"]);
-				}
-				await newQueue.setFilter(["custombassboost"]);
-				message.reply({
-					embeds: [new MessageEmbed()
-					  .setColor(ee.color)
-					  .setTimestamp()
-					  .setTitle(`♨️ **Set a Bassboost to ${bass_gain}!**`)
-					  .setFooter({ text: `💢 Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })]
-				})
+				let player = getPlayer(client, guildId);
+				const cur = currentTrack(player);
+				if (!player || !cur) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I am nothing Playing right now!**`)] })
+				if (check_if_dj(client, member, cur))
+					return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`).setDescription(`**DJ-ROLES:**\n> ${check_if_dj(client, member, cur)}`)] });
+				
+				const gain = Number(args[0]);
+				if (isNaN(gain) || gain < 0 || gain > 20) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please provide a gain between \`0\` and \`20\`!**`)] });
+				
+				// Map gain (0-20) to equalizer gain (0 to 1.0)
+				const eqGain = gain / 20;
+				await player.filterManager.setEqualizer([
+					{ band: 0, gain: eqGain }, { band: 1, gain: eqGain * 0.9 }, { band: 2, gain: eqGain * 0.8 },
+					{ band: 3, gain: eqGain * 0.5 }, { band: 4, gain: 0 }, { band: 5, gain: -0.1 },
+					{ band: 6, gain: 0 }, { band: 7, gain: 0 }, { band: 8, gain: 0 },
+					{ band: 9, gain: 0 }, { band: 10, gain: 0 }, { band: 11, gain: 0 },
+					{ band: 12, gain: 0 }, { band: 13, gain: 0 }
+				]);
+				
+				let activeFilters = player.get("activeFilters") || [];
+				activeFilters = activeFilters.filter(f => f !== "bassboost" && f !== "custombassboost");
+				if (gain > 0) activeFilters.push("custombassboost");
+				player.set("activeFilters", activeFilters);
+				
+				message.reply({ embeds: [new MessageEmbed().setColor(ee.color).setTimestamp().setTitle(`🎛 **Custom Bass Boost set to \`${gain}\`!**`).setFooter({ text: `Action by: ${member.user.tag}`, iconURL: member.user.displayAvatarURL({dynamic: true}) })] })
 			} catch (e) {
 				console.log(e.stack ? e.stack : e)
-				message.reply({
-					content: `${client.allEmojis.x} | Error: `,
-					embeds: [
-						new MessageEmbed().setColor(ee.wrongcolor)
-						.setDescription(`\`\`\`${e}\`\`\``)
-					],
-
-				})
+				message.reply({ content: `${client.allEmojis.x} | Error: `, embeds: [new MessageEmbed().setColor(ee.wrongcolor).setDescription(`\`\`\`${e}\`\`\``)] })
 			}
-		} catch (e) {
-			console.log(String(e.stack).bgRed)
-		}
+		} catch (e) { console.log(String(e.stack).bgRed) }
 	}
 }
-/**
- * @INFO
- * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * @INFO
- * Work for Milrato Development | https://milrato.eu
- * @INFO
- * Please mention Him / Milrato Development, when using this Code!
- * @INFO
- */
