@@ -30,21 +30,60 @@ async function getOrCreatePlayer(client, guildId, voiceChannelId, textChannelId)
 }
 
 /**
+ * Valid source prefixes for Lavalink search.
+ */
+const SOURCES = {
+  youtube: 'ytsearch',
+  youtubemusic: 'ytmsearch',
+  soundcloud: 'scsearch',
+  bandcamp: 'bcsearch',
+};
+
+/**
  * Search for tracks using the player.
- * Tries multiple sources (YouTube Music, SoundCloud, Bandcamp).
+ * @param {object} player - lavalink-client player
+ * @param {string} query - search query or URL
+ * @param {object} requesterId - the member/user who requested
+ * @param {string} [source] - force a specific source: 'youtube', 'youtubemusic', 'soundcloud', 'bandcamp'
  * Returns { track, result } or { track: null }.
  */
-async function searchTrack(player, query, requesterId) {
-  const sources = ['ytmsearch', 'ytsearch', 'scsearch'];
-  
-  for (const source of sources) {
+async function searchTrack(player, query, requesterId, source) {
+  // If a specific source is requested, search only that source
+  if (source && SOURCES[source]) {
     try {
-      const result = await player.search({ query: `${source}:${query}` }, requesterId);
+      const result = await player.search({ query: `${SOURCES[source]}:${query}` }, requesterId);
       if (result.tracks && result.tracks.length > 0) {
         return { track: result.tracks[0], result };
       }
     } catch (e) {
-      // Try next source
+      console.log(`[Search] ${source} failed for "${query}":`, e.message || e);
+    }
+    return { track: null, result: null };
+  }
+
+  // If query is a URL, search directly without source prefix
+  if (/^https?:\/\//.test(query)) {
+    try {
+      const result = await player.search({ query }, requesterId);
+      if (result.tracks && result.tracks.length > 0) {
+        return { track: result.tracks[0], result };
+      }
+    } catch (e) {
+      console.log(`[Search] URL failed for "${query}":`, e.message || e);
+    }
+    return { track: null, result: null };
+  }
+
+  // Default: try multiple sources
+  const sources = ['ytmsearch', 'ytsearch', 'scsearch'];
+  for (const src of sources) {
+    try {
+      const result = await player.search({ query: `${src}:${query}` }, requesterId);
+      if (result.tracks && result.tracks.length > 0) {
+        return { track: result.tracks[0], result };
+      }
+    } catch (e) {
+      console.log(`[Search] ${src} failed for "${query}":`, e.message || e);
     }
   }
   return { track: null, result: null };
@@ -123,6 +162,7 @@ function trackRequester(track) {
 }
 
 module.exports = {
+  SOURCES,
   getPlayer,
   getOrCreatePlayer,
   searchTrack,

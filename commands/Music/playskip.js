@@ -40,7 +40,7 @@ module.exports = {
 					}
 				}
 
-				player = getOrCreatePlayer(client, guildId, channel.id, channelId);
+				player = await getOrCreatePlayer(client, guildId, channel.id, channelId);
 				
 				const { track } = await searchTrack(player, Text, member);
 				if (!track) return newmsg.edit({ content: `${client.allEmojis.x} No tracks found!` }).catch(() => {});
