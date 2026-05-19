@@ -80,34 +80,37 @@ function formatDuration(ms) {
 
 client.formatDuration = formatDuration;
 
-// Initialize Lavalink manager on ready
-client.on("ready", () => {
-  const manager = new LavalinkManager({
-    nodes: lavalinkNodes,
-    userName: client.user.username,
-    defaultSearchPlatform: 'ytm',
-    sendToShard: (guildId, payload) => {
-      const guild = client.guilds.cache.get(guildId);
-      if (guild) guild.shard.send(payload);
-      return true;
-    }
+// INITIALIZE LAVALINK MANAGER IMMEDIATELY (not in ready event)
+const manager = new LavalinkManager({
+  nodes: lavalinkNodes,
+  userName: client.user?.username || "MusicBot",
+  defaultSearchPlatform: 'ytm',
+  sendToShard: (guildId, payload) => {
+    const guild = client.guilds.cache.get(guildId);
+    if (guild) guild.shard.send(payload);
+    return true;
+  }
+});
+
+manager
+  .on("ready", (node) => {
+    console.log(`Lavalink node connected: ${node.id}`.green);
+  })
+  .on("error", (node, error) => {
+    console.log(`Lavalink node error: ${error.message}`.red);
+  })
+  .on("playerCreate", (player) => {
+    console.log(`Player created for guild: ${player.guildId}`.cyan);
   });
 
-  manager
-    .on("ready", (node) => {
-      console.log(`Lavalink node connected: ${node.id}`.green);
-    })
-    .on("error", (node, error) => {
-      console.log(`Lavalink node error: ${error.message}`.red);
-    })
-    .on("playerCreate", (player) => {
-      console.log(`Player created for guild: ${player.guildId}`.cyan);
-    });
+client.manager = manager;
 
-  manager.init({ id: client.user.id });
-  console.log("Lavalink Manager initialized".cyan);
-  
-  client.manager = manager;
+// Initialize manager when client is ready
+client.on("ready", () => {
+  if (!manager.initiated) {
+    manager.init({ id: client.user.id });
+    console.log("Lavalink Manager initialized".cyan);
+  }
 });
 
 // Forward voice state updates to Lavalink manager
