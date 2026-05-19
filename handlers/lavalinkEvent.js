@@ -12,6 +12,9 @@ const {
 const { 
   check_if_dj, delay, createBar
 } = require(`./functions`);
+const {
+  currentTrack, trackTitle, trackUri, trackDuration, trackThumbnail, trackRequester
+} = require(`./playerHelpers`);
 
 let songEditInterval = null;
 
@@ -50,7 +53,6 @@ module.exports = (client) => {
             continue;
           }
           
-          // Get the player and add tracks
           let player = client.manager?.players?.get(guild.id);
           if (!player) {
             client.autoresume.delete(gId);
@@ -63,31 +65,15 @@ module.exports = (client) => {
             continue;
           }
           
-          // Add remaining tracks to queue
           for(const track of tracks.slice(1)){
-            player.queue.push({
-              title: track.title,
-              ident: track.ident,
-              duration: track.duration,
-              thumbnail: track.thumbnail,
-              author: track.author,
-              url: track.url,
-              requester: track.requester
-            });
+            await player.queue.add(track);
           }
           
-          console.log(`Autoresume`.brightCyan + ` - Added ${player.queue.length} Tracks on the QUEUE in ${guild.name}`);
+          console.log(`Autoresume`.brightCyan + ` - Added ${player.queue.tracks.length} Tracks on the QUEUE in ${guild.name}`);
           
-          // Restore volume and other settings
           await player.setVolume(data.volume);
           
-          if(data.filters && data.filters.length > 0){
-            for (const filter of data.filters) {
-              await player.setFilters({ name: filter });
-            }
-          }
-          
-          client.autoresume.delete(player.guild)
+          client.autoresume.delete(player.guildId)
           console.log(`Autoresume`.brightCyan + " - Restored queue settings + deleted the database entry")
           
           if (data.currentTime > 0) {
@@ -95,7 +81,7 @@ module.exports = (client) => {
           }
           
           if (!data.playing) {
-            player.pause();
+            await player.pause();
           }
           
           await delay(settings["auto-resume-delay"] || 1000)
@@ -114,9 +100,9 @@ module.exports = (client) => {
     // Track start event - send now playing message
     client.manager?.on("trackStart", async (player, track) => {
       try {
-        // Deafen the bot
-        if(!player.guildObj.me.voice.deaf)
-          player.guildObj.me.voice.setDeaf(true).catch((e) => {})
+        const guild = client.guilds.cache.get(player.guildId);
+        if (guild && guild.members.me && guild.members.me.voice && !guild.members.me.voice.deaf)
+          guild.members.me.voice.setDeaf(true).catch(() => {})
       } catch (error) {
         console.log(error)
       }
@@ -124,31 +110,30 @@ module.exports = (client) => {
         updateMusicSystem(player);
         var data = receiveQueueData(player, track)
         
-        if(!player.textChannel) return;
+        const textChannelId = player.textChannelId;
+        if(!textChannelId) return;
         
-        let textChannel = client.channels.cache.get(player.textChannel);
+        let textChannel = client.channels.cache.get(textChannelId);
         if (!textChannel) return;
         
-        // Send now playing message
         let currentSongPlayMsg = await textChannel.send(data).then(msg => {
           return msg;
         });
         
-        // Create a collector for buttons
         var collector = currentSongPlayMsg.createMessageComponentCollector({
           filter: (i) => i.isButton() && i.user && i.message.author.id == client.user.id,
-          time: track.duration > 0 ? track.duration : 600000
+          time: trackDuration(track) > 0 ? trackDuration(track) : 600000
         });
 
         let lastEdited = false;
 
-        // Edit the song message every 10 seconds
         try{clearInterval(songEditInterval)}catch(e){}
         songEditInterval = setInterval(async () => {
           if (!lastEdited) {
             try{
-              var newData = receiveQueueData(player, (player.queue && player.queue[0]) ? player.queue[0] : track)
-              await currentSongPlayMsg.edit(newData).catch((e) => {})
+              const cur = currentTrack(player);
+              var newData = receiveQueueData(player, cur || track)
+              await currentSongPlayMsg.edit(newData).catch(() => {})
             }catch (e){
               clearInterval(songEditInterval)
             }
@@ -156,12 +141,13 @@ module.exports = (client) => {
         }, 10000)
 
         collector.on('collect', async i => {
-          if(!player.queue || (i.customId != `10` && check_if_dj(client, i.member, player.queue ? player.queue[0] : null))) {
+          const cur = currentTrack(player);
+          if(i.customId != `10` && check_if_dj(client, i.member, cur)) {
             return i.reply({embeds: [new MessageEmbed()
               .setColor(ee.wrongcolor)
               .setFooter({ text: ee.footertext, iconURL: ee.footericon })
               .setTitle(`${client.allEmojis.x} **You are not a DJ and not the Song Requester!**`)
-              .setDescription(`**DJ-ROLES:**\n${check_if_dj(client, i.member, player.queue ? player.queue[0] : null)}`)
+              .setDescription(`**DJ-ROLES:**\n${check_if_dj(client, i.member, cur)}`)
             ],
             ephemeral: true})
           }
@@ -170,46 +156,45 @@ module.exports = (client) => {
           
           switch(i.customId){
             case "1": // Skip
-              player.stop();
+              await player.skip();
               break;
             case "2": // Stop
-              player.destroy();
+              await player.destroy();
               break;
             case "3": // Pause/Resume
               if(player.paused) {
-                player.pause(false);
+                await player.resume();
               } else {
-                player.pause(true);
+                await player.pause();
               }
               break;
             case "4": // Autoplay
-              // Toggle autoplay logic
+              const autoplay = !player.get("autoplay");
+              player.set("autoplay", autoplay);
               break;
             case "5": // Shuffle
-              if(player.queue && player.queue.length > 1) {
-                for (let i = player.queue.length - 1; i > 0; i--) {
-                  const j = Math.floor(Math.random() * (i + 1));
-                  [player.queue[i], player.queue[j]] = [player.queue[j], player.queue[i]];
-                }
+              if(player.queue && player.queue.tracks.length > 1) {
+                await player.queue.shuffle();
               }
               break;
             case "6": // Song Loop
-              player.setRepeatMode(player.repeatMode === "track" ? 0 : "track");
+              await player.setRepeatMode(player.repeatMode === "track" ? "off" : "track");
               break;
             case "7": // Queue Loop  
-              player.setRepeatMode(player.repeatMode === "queue" ? 0 : "queue");
+              await player.setRepeatMode(player.repeatMode === "queue" ? "off" : "queue");
               break;
             case "8": // Forward +10s
-              player.seek(player.position + 10000);
+              await player.seek(player.position + 10000);
               break;
             case "9": // Rewind -10s
-              player.seek(Math.max(0, player.position - 10000));
+              await player.seek(Math.max(0, player.position - 10000));
               break;
           }
           
           try {
-            var newData = receiveQueueData(player, player.queue ? player.queue[0] : null)
-            await i.message.edit(newData).catch((e) => {})
+            const curAfter = currentTrack(player);
+            var newData = receiveQueueData(player, curAfter)
+            await i.message.edit(newData).catch(() => {})
             i.reply({ embeds: [new MessageEmbed().setColor(ee.color).setTitle(`Action performed!`)] }).then(msg => {
               setTimeout(() => {
                 try {
@@ -229,8 +214,7 @@ module.exports = (client) => {
     // Track end event
     client.manager?.on("trackEnd", async (player) => {
       try {
-        var newQueue = client.manager.players.get(player.guild);
-        updateMusicSystem(newQueue);
+        updateMusicSystem(player);
       } catch (error) {
         console.log(error)
       }
@@ -239,31 +223,54 @@ module.exports = (client) => {
     // Queue end event
     client.manager?.on("queueEnd", async (player) => {
       try {
-        // Auto leave when queue ends
+        // Handle autoplay
+        const autoplay = player.get("autoplay");
+        if (autoplay) {
+          const cur = currentTrack(player) || player.queue.previous;
+          if (cur) {
+            const title = cur?.info?.title || cur?.title || "";
+            const author = cur?.info?.author || cur?.author || "";
+            try {
+              const result = await player.search({ query: `ytsearch:${author} ${title}` }, null);
+              if (result && result.tracks && result.tracks.length > 1) {
+                const nextTrack = result.tracks[Math.floor(Math.random() * Math.min(5, result.tracks.length))];
+                await player.queue.add(nextTrack);
+                await player.play();
+                return;
+              }
+            } catch(e) { console.log("Autoplay search failed:", e); }
+          }
+        }
         if (settings.leaveOnFinish) {
-          player.destroy();
+          await player.destroy();
         }
       } catch (error) {
         console.log(error)
       }
     });
 
-    // Player moved/left event
+    // Player destroy event
     client.manager?.on("playerDestroy", async (player) => {
       try {
-        let guild = client.guilds.cache.get(player.guild);
+        const guildId = player.guildId;
+        let guild = client.guilds.cache.get(guildId);
         if (!guild) return;
         
-        // Save autoresume data
-        client.autoresume.set(player.guild, {
-          voiceChannel: player.voiceChannel,
-          textChannel: player.textChannel,
-          songs: player.queue || [],
+        const cur = currentTrack(player);
+        const queueTracks = player.queue?.tracks || [];
+        const songs = [];
+        if (cur) songs.push(cur);
+        songs.push(...queueTracks);
+        
+        client.autoresume.set(guildId, {
+          voiceChannel: player.voiceChannelId,
+          textChannel: player.textChannelId,
+          songs: songs,
           volume: player.volume,
           repeatMode: player.repeatMode,
           playing: player.playing,
           currentTime: player.position,
-          filters: player.equalizer?.bands?.map(b => b.name).filter(Boolean) || []
+          filters: player.get("activeFilters") || []
         });
       } catch (error) {
         console.log(error)
@@ -271,42 +278,58 @@ module.exports = (client) => {
     });
 
     /**
-     * @INFO - Update music system message - using dashboard
+     * Update music system message
      */
     function updateMusicSystem(player) {
       // Implementation for dashboard live queue update
     }
 
     /**
-     * @INFO - Creates the data for the queue/now playing message
+     * Creates the data for the queue/now playing message
      */
     function receiveQueueData(player, newTrack) {
-      if(!player) return new MessageEmbed().setColor(ee.wrongcolor).setTitle(`NO SONG FOUND?!?!`)
+      if(!player) return { embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`NO SONG FOUND?!?!`)] }
       
-      var djs = client.settings.get(player.guild, `djroles`);
+      const guildId = player.guildId;
+      var djs = client.settings.get(guildId, `djroles`);
       if(!djs || !Array.isArray(djs)) djs = [];
       else djs = djs.map(r => `<@&${r}>`);
       if(djs.length == 0 ) djs = `\`not setup\``;
       else djs.slice(0, 15).join(`, `);
       
-      if(!newTrack) return new MessageEmbed().setColor(ee.wrongcolor).setTitle(`NO SONG FOUND?!?!`)
+      if(!newTrack) return { embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`NO SONG FOUND?!?!`)] }
+      
+      const title = newTrack?.info?.title || newTrack?.title || "Unknown";
+      const thumbnail = newTrack?.info?.artworkUrl || newTrack?.thumbnail || null;
+      const uri = newTrack?.info?.uri || newTrack?.url || null;
+      const duration = newTrack?.info?.duration || newTrack?.duration || 0;
+      const requester = newTrack?.requester;
+      const activeFilters = player.get("activeFilters") || [];
+      const autoplay = player.get("autoplay");
+      const queueLength = player.queue?.tracks?.length || 0;
+
+      let dashboardUrl;
+      try { dashboardUrl = require(`../dashboard/settings.json`).website.domain; } catch(e) { dashboardUrl = ""; }
       
       var embed = new MessageEmbed().setColor(ee.color)
-        .setDescription(`See the [Queue on the **DASHBOARD** Live!](${require(`../dashboard/settings.json`).website.domain}/queue/${player.guild})`)
-        .addFields({ name: `Requested by:`, value: `>>> ${newTrack.requester || "Unknown"}`, inline: true })
-        .addFields({ name: `Duration:`, value: `>>> \`${client.formatDuration(player.position)} / ${client.formatDuration(newTrack.duration)}\``, inline: true })
-        .addFields({ name: `Queue:`, value: `>>> \`${player.queue ? player.queue.length : 0} song(s)\``, inline: true })
+        .addFields({ name: `Requested by:`, value: `>>> ${requester || "Unknown"}`, inline: true })
+        .addFields({ name: `Duration:`, value: `>>> \`${client.formatDuration(player.position)} / ${client.formatDuration(duration)}\``, inline: true })
+        .addFields({ name: `Queue:`, value: `>>> \`${queueLength} song(s)\``, inline: true })
         .addFields({ name: `Volume:`, value: `>>> \`${player.volume} %\``, inline: true })
-        .addFields({ name: `Loop:`, value: `>>> ${player.repeatMode ? player.repeatMode === "queue" ? `${client.allEmojis.check_mark}\` Queue\`` : `${client.allEmojis.check_mark} \`Song\`` : `${client.allEmojis.x}`}`, inline: true })
-        .addFields({ name: `Filter${player.equalizer?.active?.length > 0 ? `s`: ``}:`, value: `>>> ${player.equalizer?.active?.length > 0 ? player.equalizer.active.map(f => String(f)).join(`, `) : `${client.allEmojis.x}`}`, inline: true })
-        .setAuthor(`${newTrack.title}`, newTrack.thumbnail || null, newTrack.url || null)
-        .setThumbnail(newTrack.thumbnail || null)
-        .setFooter({ text: `Requested by ${newTrack.requester?.username || "Unknown"}`, iconURL: newTrack.requester?.displayAvatarURL({ dynamic: true }) });
+        .addFields({ name: `Loop:`, value: `>>> ${player.repeatMode !== "off" ? player.repeatMode === "queue" ? `${client.allEmojis.check_mark} \`Queue\`` : `${client.allEmojis.check_mark} \`Song\`` : `${client.allEmojis.x}`}`, inline: true })
+        .addFields({ name: `Filter${activeFilters.length > 0 ? `s`: ``}:`, value: `>>> ${activeFilters.length > 0 ? activeFilters.map(f => `\`${f}\``).join(`, `) : `${client.allEmojis.x}`}`, inline: true })
+        .setAuthor(title, thumbnail, uri)
+        .setThumbnail(thumbnail)
+        .setFooter({ text: `Requested by ${requester?.user?.username || requester?.username || "Unknown"}`, iconURL: requester?.user?.displayAvatarURL?.({ dynamic: true }) || requester?.displayAvatarURL?.({ dynamic: true }) });
       
+      if (dashboardUrl) {
+        embed.setDescription(`See the [Queue on the **DASHBOARD** Live!](${dashboardUrl}/queue/${guildId})`);
+      }
+
       let skip = new MessageButton().setStyle('PRIMARY').setCustomId('1').setEmoji('⏭').setLabel(`Skip`)
       let stop = new MessageButton().setStyle('DANGER').setCustomId('2').setEmoji('⏹').setLabel(`Stop`)
       let pause = new MessageButton().setStyle('SECONDARY').setCustomId('3').setEmoji('⏸').setLabel(`Pause`)
-      let autoplay = new MessageButton().setStyle('SUCCESS').setCustomId('4').setEmoji('🔁').setLabel(`Autoplay`)
+      let autoplayBtn = new MessageButton().setStyle(autoplay ? 'SUCCESS' : 'SECONDARY').setCustomId('4').setEmoji('🔁').setLabel(`Autoplay`)
       let shuffle = new MessageButton().setStyle('PRIMARY').setCustomId('5').setEmoji('🔀').setLabel(`Shuffle`)
       let songloop = new MessageButton().setStyle('SUCCESS').setCustomId('6').setEmoji('🔂').setLabel(`Song`)
       let queueloop = new MessageButton().setStyle('SUCCESS').setCustomId('7').setEmoji('🔁').setLabel(`Queue`)
@@ -325,12 +348,11 @@ module.exports = (client) => {
         songloop = songloop.setStyle('SUCCESS')
         queueloop = queueloop.setStyle('SECONDARY')
       }
-      if (!player.queue || player.queue.length < 2) {
+      if (queueLength < 2) {
         shuffle = shuffle.setDisabled()
       }
       
-      // Buttons
-      const row = new MessageActionRow().addComponents([skip, stop, pause, autoplay, shuffle]);
+      const row = new MessageActionRow().addComponents([skip, stop, pause, autoplayBtn, shuffle]);
       const row2 = new MessageActionRow().addComponents([songloop, queueloop, forward, rewind, lyrics]);
       
       return {
@@ -343,10 +365,3 @@ module.exports = (client) => {
     console.log(e)
   }
 };
-
-/**
- * @INFO
- * Bot Coded by Tomato#6966 | https://discord.gg/milrato
- * Migrated to use Lavalink
- * @INFO
- */

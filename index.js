@@ -4,26 +4,16 @@ const settings = require(`./botconfig/settings.json`);
 const filtersConfig = require(`./botconfig/filters.json`);
 const colors = require("colors");
 const Enmap = require("enmap");
-const voice = require("@discordjs/voice");
 
-// Verify voice encryption library loaded (sodium-native for xchacha20)
+// Import Lavalink client
+let LavalinkManager;
 try {
-  const sodium = require("sodium-native");
-  console.log("Voice encryption: sodium-native loaded OK".green);
-} catch (e) {
-  console.warn("Voice encryption: sodium-native not available, falling back to other libs".yellow);
-}
-
-// Import Lavalink client (v4 compatible)
-let LavalinkManager, LavalinkNode;
-try {
-  const lc = require('./node_modules/lavalink-client/dist/index.cjs');
+  const lc = require('lavalink-client');
   LavalinkManager = lc.LavalinkManager;
-  console.log("Using lavalink-client v4".cyan);
+  console.log("lavalink-client loaded".cyan);
 } catch(e) {
-  console.warn("lavalink-client not available, using erela.js fallback".yellow);
-  const { Manager } =require("erela.js");
-  LavalinkManager = null;
+  console.error("lavalink-client not installed! Run: npm install lavalink-client".red);
+  process.exit(1);
 }
 
 // Set up Lavalink nodes
@@ -33,8 +23,6 @@ const lavalinkNodes = [{
   authorization: config.lavalink?.password || "youshallnotpass",
   secure: config.lavalink?.secure || false,
 }];
-
-let manager = null;
 
 // Initialize the Discord client
 const client = new Discord.Client({
@@ -53,15 +41,12 @@ const client = new Discord.Client({
     ],
     presence: {
       activity: { 
-        name: `+help | musicium.eu`, 
+        name: `~help | Forge Music`, 
         type: "PLAYING", 
       },
       status: "online"
     }
 });
-
-// Bot coded by: Tomato#6966
-// Migrated to use Lavalink
 
 //Define some Global Collections
 client.commands = new Discord.Collection();
@@ -78,8 +63,9 @@ client.settings = new Enmap({ name: "settings", dataDir: "./databases/settings"}
 client.infos = new Enmap({ name: "infos", dataDir: "./databases/infos"});
 client.autoresume = new Enmap({ name: "autoresume", dataDir: "./databases/infos"});
 
-// Helper function to format duration
+// Helper function to format duration (ms to human readable)
 function formatDuration(ms) {
+  if (!ms || isNaN(ms)) return "0:00";
   const seconds = Math.floor(ms / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
@@ -92,23 +78,22 @@ function formatDuration(ms) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Make helper available globally
 client.formatDuration = formatDuration;
 
-// Initialize the music manager when client is ready
+// Initialize Lavalink manager on ready
 client.on("ready", () => {
-  if (LavalinkManager) {
-    // Use lavalink-client v4
-    manager = new LavalinkManager({
-      nodes: lavalinkNodes,
-      userName: client.user.username,
-      defaultSearchPlatform: 'ytm',
-      sendToShard: (guildId, payload) => {
-        const guild = client.guilds.cache.get(guildId);
-        if (guild) guild.shard.send(JSON.stringify(payload));
-        return true;
-      }
-    })
+  const manager = new LavalinkManager({
+    nodes: lavalinkNodes,
+    userName: client.user.username,
+    defaultSearchPlatform: 'ytm',
+    sendToShard: (guildId, payload) => {
+      const guild = client.guilds.cache.get(guildId);
+      if (guild) guild.shard.send(payload);
+      return true;
+    }
+  });
+
+  manager
     .on("ready", (node) => {
       console.log(`Lavalink node connected: ${node.id}`.green);
     })
@@ -116,75 +101,23 @@ client.on("ready", () => {
       console.log(`Lavalink node error: ${error.message}`.red);
     })
     .on("playerCreate", (player) => {
-      // Ensure queue is initialized as an array
-      if (!Array.isArray(player.queue)) {
-        player.queue = [];
-      }
-    });
-    
-    manager.init({ id: client.user.id });
-    console.log("Lavalink Manager initialized (v4)".cyan);
-  } else {
-    // Fallback to erela.js
-    const { Manager } = require("erela.js");
-    manager = new Manager({
-      nodes: lavalinkNodes,
-      deploymentId: client.user.id,
-      send: (id, payload) => {
-        const guild = client.guilds.cache.get(id);
-        if (guild) guild.shard.send(payload);
-      },
-    })
-    .on("nodeReady", (node) => {
-      console.log(`Lavalink node connected: ${node.id}`.green);
-    })
-    .on("nodeError", (node, error) => {
-      console.log(`Lavalink node error: ${error.message}`.red);
-    })
-    .on("playerCreate", (player) => {
-      // Ensure queue is initialized as an array for erela.js
-      if (!Array.isArray(player.queue)) {
-        player.queue = [];
-      }
-    })
-    .on("trackStart", (player, track) => {
-      // Ensure queue is an array before track start
-      if (!Array.isArray(player.queue)) {
-        player.queue = [];
-      }
-      if (player.textChannel) {
-        const channel = client.channels.cache.get(player.textChannel);
-        if (channel) {
-          channel.send({
-            embeds: [{
-              color: 0x00ff00,
-              title: "Now Playing",
-              description: `[${track.title}](${track.uri})`,
-              thumbnail: { url: track.thumbnail },
-              fields: [
-                { name: "Requested by", value: track.requester?.toString() || "Unknown" },
-                { name: "Duration", value: track.isStream ? "LIVE" : formatDuration(track.duration) }
-              ]
-            }]
-          });
-        }
-      }
-    })
-    .on("queueEnd", (player) => {
-      if (settings.leaveOnFinish) {
-        player.destroy();
-      }
+      console.log(`Player created for guild: ${player.guildId}`.cyan);
     });
 
-    manager.init(client.user.id);
-    console.log("Erela.js Manager initialized".cyan);
-  }
+  manager.init({ id: client.user.id });
+  console.log("Lavalink Manager initialized".cyan);
   
-  // Set the manager on the client
   client.manager = manager;
 });
 
-//Require the Handlers - Add the antiCrash file too, if its enabled
+// Forward voice state updates to Lavalink manager
+client.on("raw", (d) => {
+  if (d.t === "VOICE_STATE_UPDATE" || d.t === "VOICE_SERVER_UPDATE") {
+    client.manager?.sendRawData(d);
+  }
+});
+
+//Require the Handlers
 ["events", "commands", "slashCommands", settings.antiCrash ? "antiCrash" : null, "lavalinkEvent"]
     .filter(Boolean)
     .forEach(h => {
@@ -200,14 +133,7 @@ if (!botToken) {
 client.login(botToken)
 
 /**
- * @INFO
- * Bot Coded by Tomato#6966 | https://discord.gg/milrato
- * Migrated to use Lavalink
- * @INFO
- */
-
-/**
- * @LOAD_THE_DASHBOARD - Loading the Dashboard Module with the BotClient into it!
+ * @LOAD_THE_DASHBOARD
  */
 client.on("ready", () => {
   require("./dashboard/index.js")(client);

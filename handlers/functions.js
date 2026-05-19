@@ -49,10 +49,11 @@ function check_if_dj(client, member, song) {
         if (!member.guild.roles.cache.get(roleid[i])) continue;
         //if he has role set var to true
         if (member.roles.cache.has(roleid[i])) isdj = true;
-        //add the role to the string
     }
+    // Get the requester ID - supports both DisTube (song.user) and lavalink-client (song.requester) formats
+    const requesterId = song?.requester?.user?.id || song?.requester?.id || song?.user?.id || null;
     //if no dj and not an admin, return the string
-    if (!isdj && !member.permissions.has("ADMINISTRATOR") && song.user.id != member.id)
+    if (!isdj && !member.permissions.has("ADMINISTRATOR") && requesterId != member.id)
         return roleid.map(i=>`<@&${i}>`).join(", ");
     //if he is a dj or admin, then return false, which will continue the cmd
     else
