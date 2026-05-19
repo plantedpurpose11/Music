@@ -17,14 +17,17 @@ function getPlayer(client, guildId) {
 async function getOrCreatePlayer(client, guildId, voiceChannelId, textChannelId) {
   let player = getPlayer(client, guildId);
   if (!player) {
-    player = client.manager.createPlayer({
+    console.log(`[PlayerHelper] Creating new player for guild: ${guildId}, voice: ${voiceChannelId}`);
+    player = await client.manager.createPlayer({
       guildId,
       voiceChannelId,
       textChannelId,
       selfDeaf: true,
       selfMute: false,
     });
+    console.log(`[PlayerHelper] Connecting player to voice channel`);
     await player.connect();
+    console.log(`[PlayerHelper] Player connected, player.connected:`, player.connected);
   }
   return player;
 }
@@ -51,8 +54,10 @@ async function searchTrack(player, query, requesterId, source) {
   // If a specific source is requested, search only that source
   if (source && SOURCES[source]) {
     try {
+      console.log(`[Search] Searching ${source}: ${query}`);
       const result = await player.search({ query: `${SOURCES[source]}:${query}` }, requesterId);
       if (result.tracks && result.tracks.length > 0) {
+        console.log(`[Search] Found track: ${result.tracks[0].info?.title || result.tracks[0].title}`);
         return { track: result.tracks[0], result };
       }
     } catch (e) {
@@ -64,8 +69,10 @@ async function searchTrack(player, query, requesterId, source) {
   // If query is a URL, search directly without source prefix
   if (/^https?:\/\//.test(query)) {
     try {
+      console.log(`[Search] Searching URL: ${query}`);
       const result = await player.search({ query }, requesterId);
       if (result.tracks && result.tracks.length > 0) {
+        console.log(`[Search] Found track from URL: ${result.tracks[0].info?.title || result.tracks[0].title}`);
         return { track: result.tracks[0], result };
       }
     } catch (e) {
@@ -78,8 +85,10 @@ async function searchTrack(player, query, requesterId, source) {
   const sources = ['ytmsearch', 'ytsearch', 'scsearch'];
   for (const src of sources) {
     try {
+      console.log(`[Search] Trying ${src}: ${query}`);
       const result = await player.search({ query: `${src}:${query}` }, requesterId);
       if (result.tracks && result.tracks.length > 0) {
+        console.log(`[Search] Found track with ${src}: ${result.tracks[0].info?.title || result.tracks[0].title}`);
         return { track: result.tracks[0], result };
       }
     } catch (e) {
@@ -89,8 +98,10 @@ async function searchTrack(player, query, requesterId, source) {
   
   // Final fallback: try raw query (might be a direct URL)
   try {
+    console.log(`[Search] Trying raw query: ${query}`);
     const result = await player.search({ query }, requesterId);
     if (result.tracks && result.tracks.length > 0) {
+      console.log(`[Search] Found track with raw query: ${result.tracks[0].info?.title || result.tracks[0].title}`);
       return { track: result.tracks[0], result };
     }
   } catch (e) {
