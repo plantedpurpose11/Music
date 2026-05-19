@@ -63,7 +63,7 @@ module.exports = {
 			}).catch(e => { console.log(e) })
 
 			try {
-				let player = getOrCreatePlayer(client, guildId, channel.id, channelId);
+				let player = await getOrCreatePlayer(client, guildId, channel.id, channelId);
 				
 				const { track } = await searchTrack(player, Text, member);
 				
