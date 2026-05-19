@@ -44,9 +44,20 @@ async function searchTrack(player, query, requesterId) {
         return { track: result.tracks[0], result };
       }
     } catch (e) {
-      // Try next source
+      console.log(`[Search] ${source} failed for "${query}":`, e.message || e);
     }
   }
+  
+  // Final fallback: try raw query (might be a direct URL)
+  try {
+    const result = await player.search({ query }, requesterId);
+    if (result.tracks && result.tracks.length > 0) {
+      return { track: result.tracks[0], result };
+    }
+  } catch (e) {
+    console.log(`[Search] raw query failed for "${query}":`, e.message || e);
+  }
+  
   return { track: null, result: null };
 }
 
