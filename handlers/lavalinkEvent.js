@@ -21,7 +21,23 @@ let songEditInterval = null;
 module.exports = (client) => {
   try {
     /**
+     * MESSAGE CLEANUP - Delete bot messages in music channel after 20 seconds
+     */
+    const messageCleanup = (message, client) => {
+      if (!message || !message.channel) return;
+      
+      // Only cleanup in music panel channels
+      const musicChannelId = client.settings.get(message.guildId, `music.channel`);
+      if (musicChannelId && message.channelId === musicChannelId) {
+        setTimeout(() => {
+          message.delete().catch(() => {});
+        }, 20000); // 20 seconds
+      }
+    };
+
+    /**
      * IDLE CHECK - Leave voice channel when bot is alone
+     * Only runs after music has been playing for 30+ seconds
      */
     const idleCheck = () => {
       try {
@@ -30,6 +46,12 @@ module.exports = (client) => {
         // Iterate over players directly
         for (const [guildId, player] of client.manager.players) {
           if (!player || !player.voiceChannelId) continue;
+          
+          // NEW: Don't leave if still loading/trying to play - wait for actual playback
+          // Give user time to add more songs before we check
+          if (!player.playing && !player.paused && player.queue.tracks.length === 0) {
+            continue; // Still loading, don't check yet
+          }
           
           const guild = client.guilds.cache.get(guildId);
           if (!guild) continue;
@@ -55,8 +77,8 @@ module.exports = (client) => {
       }
     };
 
-    // Start idle check interval (every 10 seconds)
-    idleCheckInterval = setInterval(idleCheck, 10000);
+    // Start idle check interval (every 30 seconds - increased from 10 to give time to add songs)
+    idleCheckInterval = setInterval(idleCheck, 30000);
 
     /**
      * AUTO-RESUME-FUNCTION
@@ -639,7 +661,7 @@ module.exports = (client) => {
       
       var embed = new MessageEmbed().setColor(ee.color)
         .addFields({ name: `Requested by:`, value: `>>> ${requester || "Unknown"}`, inline: true })
-        .addFields({ name: `Duration:`, value: `>>> \`${client.formatDuration(player.position)} / ${client.formatDuration(duration)}\``, inline: true })
+        .addFields({ name: `Duration:`, value: `>>> \`${player.position ? client.formatDuration(player.position) : '0:00'} / ${duration ? client.formatDuration(duration) : '0:00'}\``, inline: true })
         .addFields({ name: `Queue:`, value: `>>> \`${queueLength} song(s)\``, inline: true })
         .addFields({ name: `Volume:`, value: `>>> \`${player.volume} %\``, inline: true })
         .addFields({ name: `Loop:`, value: `>>> ${player.repeatMode !== "off" ? player.repeatMode === "queue" ? `${client.allEmojis.check_mark} \`Queue\`` : `${client.allEmojis.check_mark} \`Song\`` : `${client.allEmojis.x}`}`, inline: true })
