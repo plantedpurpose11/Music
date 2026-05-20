@@ -31,6 +31,13 @@ module.exports = async (client, message) => {
   // Check if this is the music request channel - process song search without prefix
   let musicChannel = client.settings.get(message.guild.id, `music.channel`);
   if (musicChannel && message.channel.id === musicChannel) {
+    // Auto-delete user messages in music channel after 20 seconds
+    if (!message.author.bot) {
+      setTimeout(() => {
+        message.delete().catch(() => {});
+      }, 20000);
+    }
+    
     // If message starts with prefix, block it (use commands elsewhere)
     if (prefixRegex.test(message.content)) {
       return message.reply(`${client.allEmojis.x} **Please use Commands in a different Channel!**`).then(msg=>{setTimeout(()=>{try{msg.delete().catch(() => {});}catch(e){ }}, 3000)}).catch(() => {});
