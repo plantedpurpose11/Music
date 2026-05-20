@@ -6,6 +6,7 @@ const {
   onCoolDown,
   replacemsg
 } = require(`../../handlers/functions`);
+const { getOrCreatePlayer, searchTrack, trackTitle } = require(`../../handlers/playerHelpers`);
 const Discord = require(`discord.js`);
 module.exports = async (client, message) => {
   if (!message.guild || !message.channel || message.author.bot) return;
@@ -26,6 +27,64 @@ module.exports = async (client, message) => {
   })
   let prefix = client.settings.get(message.guild.id, `prefix`)
   const prefixRegex = new RegExp(`^(<@!?${client.user.id}>|${escapeRegex(prefix)})`);
+  
+  // Check if this is the music request channel - process song search without prefix
+  let musicChannel = client.settings.get(message.guild.id, `music.channel`);
+  if (musicChannel && message.channel.id === musicChannel) {
+    // If message starts with prefix, block it (use commands elsewhere)
+    if (prefixRegex.test(message.content)) {
+      return message.reply(`${client.allEmojis.x} **Please use Commands in a different Channel!**`).then(msg=>{setTimeout(()=>{try{msg.delete().catch(() => {});}catch(e){ }}, 3000)}).catch(() => {});
+    }
+    
+    // This is the music request channel - search and play the song
+    if (message.content.trim().length > 0) {
+      // Check if user is in a voice channel
+      if (!message.member.voice.channelId) {
+        return message.reply(`${client.allEmojis.x} **You must join a Voice Channel first to request songs!**`).catch(() => {});
+      }
+      let text = message.content.trim();
+      try {
+        const player = await getOrCreatePlayer(client, message.guild.id, message.member.voice.channelId, message.channel.id);
+        
+        const { track, result } = await searchTrack(player, text, message.author);
+        if (!track) {
+          return message.reply(`${client.allEmojis.x} **Could not find anything for:** \`${text}\``).catch(() => {});
+        }
+        
+        if (result && (result.loadType === "playlist" || result.loadType === "PLAYLIST_LOADED")) {
+          for (const t of result.tracks) { t.requester = message.author; await player.queue.add(t); }
+          message.reply(`${client.allEmojis.check_mark} **Added \`${result.tracks.length}\` Songs from \`${result.playlist?.name || 'playlist'}\` to the Queue!**`).catch(() => {});
+        } else {
+          track.requester = message.author;
+          await player.queue.add(track);
+          message.reply(`${client.allEmojis.check_mark} **Added to Queue:** \`${trackTitle(track)}\``).catch(() => {});
+        }
+        
+        // Start playing if nothing is playing
+        if (!player.playing && !player.paused) {
+          player.play();
+        }
+        
+        var embed = new Discord.MessageEmbed()
+          .setColor(ee.color)
+          .setTitle(`<a:playing:840260446572052350> Now ${player.queue.current.isStream ? "LIVE" : "Playing"}: ${trackTitle(player.queue.current)}`)
+          .setURL(player.queue.current.uri)
+          .setThumbnail(player.queue.current.thumbnail)
+          .addField(`<:clock:840260437050245229> Duration:`, player.queue.current.isStream ? `LIVE` : new Date(player.queue.current.duration).toISOString().substr(14, 8), true)
+          .addField(`<:musical:840260441718132736> Song by:`, player.queue.current.author, true)
+          .setFooter({ text: `Requested by: ${message.author.tag}`, iconURL: message.author.displayAvatarURL({ dynamic: true }) })
+        message.channel.send({ embeds: [embed] }).catch(() => {});
+        return;
+      } catch (e) {
+        console.log(e.stack ? e.stack : e);
+        message.reply(`${client.allEmojis.x} **Error playing song:** \`${e.message}\``).catch(() => {});
+        return;
+      }
+    }
+    return; // Empty message in music channel
+  }
+  
+  // Normal command processing (requires prefix)
   if (!prefixRegex.test(message.content)) return;
   const [, mPrefix] = message.content.match(prefixRegex);
   const args = message.content.slice(mPrefix.length).trim().split(/ +/).filter(Boolean);
@@ -41,7 +100,7 @@ module.exports = async (client, message) => {
   let command = client.commands.get(cmd);
   if (!command) command = client.commands.get(client.aliases.get(cmd));
   if (command) {
-    if(client.settings.get(message.guild.id, "music.channels") === message.channel.id) 
+    if(client.settings.get(message.guild.id, "music.channel") === message.channel.id) 
     return message.reply(`${client.allEmojis.x} **Please use a Command Somewhere else!**`).then(msg=>{setTimeout(()=>{try{msg.delete().catch(() => {});}catch(e){ }}, 3000)}).catch(() => {});
     let botchannels = client.settings.get(message.guild.id, `botchannel`);
     if (!botchannels || !Array.isArray(botchannels)) botchannels = [];
