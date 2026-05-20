@@ -81,12 +81,18 @@ module.exports = {
           .setFooter({ text: `To see command Descriptions and Information, type: ${prefix}help [CMD NAME]`, iconURL: client.user.displayAvatarURL() });
         const commands = (category) => {
           // Get regular commands
-          const cmds = client.commands.filter((cmd) => cmd.category === category).map((cmd) => `\`${cmd.name}\``);
-          // Get slash commands in this category (stored in slashCommands collection)
-          const slashcmds = client.slashCommands.filter((cmd) => cmd.category === category).map((cmd) => `/${cmd.name}`);
-          // Combine both, removing duplicates
-          const all = [...new Set([...cmds, ...slashcmds])];
-          return all.length > 0 ? all : [`\`No ${category} commands\``];
+          const cmds = client.commands.filter((cmd) => cmd.category === category).map((cmd) => cmd.name);
+          // Get slash commands in this category
+          const slashcmds = client.slashCommands.filter((cmd) => cmd.category === category).map((cmd) => cmd.name);
+          
+          // Get unique command names (prioritize slash commands)
+          const uniqueNames = [...new Set([...cmds, ...slashcmds])];
+          
+          // Format: slash commands as /name, prefix commands as `name
+          return uniqueNames.map(name => {
+            const isSlash = slashcmds.includes(name);
+            return isSlash ? `/${name}` : `~${name}`;
+          });
         };
         try {
           for (let i = 0; i < client.categories.length; i += 1) {
