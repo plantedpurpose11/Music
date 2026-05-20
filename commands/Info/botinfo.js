@@ -53,7 +53,7 @@ module.exports = {
                         .addFields({ name: "\u200b", value: `\u200b`, inline: true })
                         .addFields({ name: "💻 Platform", value: `\`\`${os.platform()}\`\``, inline: true })
                         .addFields({ name: "API Latency", value: `\`${client.ws.ping}ms\``, inline: true })
-                        .setFooter({ text: "Coded by: Tomato#6966", iconURL: "https://cdn.discordapp.com/avatars/442355791412854784/a_d5591ce201b3018a7aa06c3f77d4b6f0.gif?size=512" });
+                        .setFooter({ text: "Coded by: PlantedPurpose", iconURL: "https://cdn.discordapp.com/avatars/442355791412854784/a_d5591ce201b3018a7aa06c3f77d4b6f0.gif?size=512" });
                     message.reply({
                         embeds: [botinfo]
                     });
@@ -88,7 +88,7 @@ module.exports = {
                         .addFields({ name: "\u200b", value: `\u200b`, inline: true })
                         .addFields({ name: "💻 Platform", value: `\`\`${os.platform()}\`\``, inline: true })
                         .addFields({ name: "API Latency", value: `\`${client.ws.ping}ms\``, inline: true })
-                        .setFooter({ text: "Coded by: Tomato#6966", iconURL: "https://cdn.discordapp.com/avatars/442355791412854784/a_d5591ce201b3018a7aa06c3f77d4b6f0.gif?size=512" });
+                        .setFooter({ text: "Coded by: PlantedPurpose", iconURL: "https://cdn.discordapp.com/avatars/442355791412854784/a_d5591ce201b3018a7aa06c3f77d4b6f0.gif?size=512" });
                     message.reply({
                         embeds: [botinfo]
                     });

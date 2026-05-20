@@ -53,10 +53,10 @@ module.exports = {
       // Update the bot's activity (status message)
       client.user.setPresence({
         status: currentStatus,
-        activity: {
+        activities: [{
           name: newMessage,
           type: "PLAYING"
-        }
+        }]
       });
       
       client.settings.set(message.guild.id, newMessage, "botmessage");
