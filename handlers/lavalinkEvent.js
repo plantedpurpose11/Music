@@ -21,6 +21,44 @@ let songEditInterval = null;
 module.exports = (client) => {
   try {
     /**
+     * IDLE CHECK - Leave voice channel when bot is alone
+     */
+    const idleCheck = () => {
+      try {
+        if (!client.manager || !client.manager.players) return;
+        
+        // Iterate over players directly
+        for (const [guildId, player] of client.manager.players) {
+          if (!player || !player.voiceChannelId) continue;
+          
+          const guild = client.guilds.cache.get(guildId);
+          if (!guild) continue;
+          
+          // Get the voice channel
+          const voiceChannel = guild.channels.cache.get(player.voiceChannelId);
+          if (!voiceChannel) continue;
+          
+          // Get members in voice channel (excluding bots)
+          const members = voiceChannel.members.filter(m => !m.user.bot);
+          const listeningMembers = voiceChannel.members.filter(m => 
+            !m.user.bot && !m.voice.deaf && !m.voice.selfDeaf
+          );
+          
+          // If only bot is in channel OR no human is listening, leave
+          if (members.size <= 1 || listeningMembers.size === 0) {
+            console.log(`Idle Check`.brightYellow + ` - Bot alone in ${guild.name}, leaving voice channel...`);
+            player.destroy();
+          }
+        }
+      } catch (e) {
+        // Silently ignore errors in idle check
+      }
+    };
+
+    // Start idle check interval (every 10 seconds)
+    idleCheckInterval = setInterval(idleCheck, 10000);
+
+    /**
      * AUTO-RESUME-FUNCTION
      */
     const autoconnect = async () => {
@@ -107,11 +145,22 @@ module.exports = (client) => {
         console.log(error)
       }
       try {
-        updateMusicSystem(player);
-        var data = receiveQueueData(player, track)
-        
         const textChannelId = player.textChannelId;
         if(!textChannelId) return;
+        
+        // Check if triggered from the setupmusic panel channel - don't create Now Playing popup
+        const musicChannelSetting = client.settings.get(player.guildId, `music.channel`);
+        if(musicChannelSetting && textChannelId === musicChannelSetting) {
+          console.log(`Music Panel Update`.brightCyan + ` - Updated panel, skipped Now Playing popup`);
+          // Still update the music panel
+          updateMusicPanel(player.guildId, client);
+          return;
+        }
+        
+        // Update the music panel if exists
+        updateMusicPanel(player.guildId, client);
+        
+        var data = receiveQueueData(player, track)
         
         let textChannel = client.channels.cache.get(textChannelId);
         if (!textChannel) return;
@@ -211,10 +260,11 @@ module.exports = (client) => {
       }
     });
 
-    // Track end event
+    // Track end event - revert music panel when song finishes
     client.manager?.on("trackEnd", async (player) => {
       try {
-        updateMusicSystem(player);
+        // Revert the music panel to idle state when song finishes
+        updateMusicPanelRevert(player.guildId, client);
       } catch (error) {
         console.log(error)
       }
@@ -277,11 +327,287 @@ module.exports = (client) => {
       }
     });
 
+    // Panel interaction handler - buttons and select menus
+    client.on(`interactionCreate`, async (interaction) => {
+      try {
+        if (!interaction.isButton() && !interaction.isSelectMenu()) return;
+        
+        const { guild, message, channel, member, user } = interaction;
+        if (!guild) return;
+        
+        // Check if this is the music panel
+        const data = client.settings.get(guild.id, `music`);
+        if (!data || data.channel !== channel?.id || data.message !== message?.id) return;
+        
+        // Member must be in voice channel
+        if (!member?.voice?.channel) {
+          return interaction.reply({ 
+            content: `${client.allEmojis.x} **Please join a Voice Channel first!**`,
+            ephemeral: true 
+          });
+        }
+        
+        // Handle select menu for playlists
+        if (interaction.isSelectMenu()) {
+          const playlistValue = interaction.values?.[0];
+          let playlistUrl = '';
+          
+          // Map playlist names to URLs
+          switch (playlistValue?.toLowerCase()) {
+            case 'pop': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DX0sUXhucEJJP'; break;
+            case 'strange-fruits': playlistUrl = 'https://open.spotify.com/playlist/6xGLprv9fmlMgeAMpW0x51'; break;
+            case 'gaming': playlistUrl = 'https://open.spotify.com/playlist/4a54P2VHy30WTi7gix0KW6'; break;
+            case 'chill': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DX4WYpdgoIcn6'; break;
+            case 'rock': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DWXRqgorJj26U'; break;
+            case 'jazz': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DXbITWG1ZJKYt'; break;
+            case 'blues': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DXd9rSDyQguIk'; break;
+            case 'metal': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DX9qNs32fujYe'; break;
+            case 'magic-release': playlistUrl = 'https://www.youtube.com/playlist?list=PLYUn4Yaogdagvwe69dczceHTNm0K_ZG3P'; break;
+            case 'ncs | no copyright music': playlistUrl = 'https://open.spotify.com/playlist/7sZbq8QGyMnhKPcLJvCUFD'; break;
+            case 'default': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DX0sUXhucEJJP'; break;
+            default: playlistUrl = '';
+          }
+          
+          if (!playlistUrl) {
+            return interaction.reply({ 
+              content: `${client.allEmojis.x} Unknown playlist selection`,
+              ephemeral: true 
+            });
+          }
+          
+          await interaction.reply({ 
+            content: `🎵 Loading **${playlistValue}** playlist...`,
+            ephemeral: true 
+          });
+          
+          try {
+            // Use getOrCreatePlayer from playerHelpers
+            const { getOrCreatePlayer, searchTrack } = require('./playerHelpers');
+            const player = await getOrCreatePlayer(client, guild.id, member.voice.channel.id, channel.id, member);
+            
+            // Search and add the playlist
+            const { track, result } = await searchTrack(player, playlistUrl, member);
+            
+            if (result && result.loadType === 'playlist') {
+              // It's a playlist - add all tracks
+              for (const t of result.tracks) {
+                t.requester = member;
+                await player.queue.add(t);
+              }
+            } else if (track) {
+              // Single track
+              track.requester = member;
+              await player.queue.add(track);
+            }
+            
+            // Start playing if not already
+            if (!player.playing && !player.paused) {
+              await player.play();
+            }
+            
+            await interaction.editReply({ 
+              content: `✅ Loaded: **${playlistValue}**`,
+              ephemeral: true 
+            });
+            
+          } catch (e) {
+            console.log('Playlist load error:', e);
+            await interaction.editReply({ 
+              content: `${client.allEmojis.x} Error loading playlist: ${e.message}`,
+              ephemeral: true 
+            });
+          }
+          
+          return;
+        }
+        
+        // Handle buttons - Skip, Stop, Pause, etc.
+        if (interaction.isButton()) {
+          const player = client.manager?.players?.get(guild.id);
+          if (!player) {
+            return interaction.reply({ 
+              content: `${client.allEmojis.x} No music playing`,
+              ephemeral: true 
+            });
+          }
+          
+          switch (interaction.customId) {
+            case 'Skip': // Skip
+              await player.skip();
+              break;
+            case 'Stop': // Stop
+              await player.destroy();
+              break;
+            case 'Pause': // Pause/Resume
+              if (player.paused) {
+                await player.resume();
+              } else {
+                await player.pause();
+              }
+              break;
+            case 'Autoplay': // Autoplay toggle
+              const autoplay = !player.get('autoplay');
+              player.set('autoplay', autoplay);
+              break;
+            case 'Shuffle': // Shuffle
+              if (player.queue && player.queue.tracks.length > 1) {
+                await player.queue.shuffle();
+              }
+              break;
+            default:
+              return;
+          }
+          
+          await interaction.reply({ 
+            content: `✅ Action performed!`,
+            ephemeral: true 
+          });
+        }
+        
+      } catch (e) {
+        console.log('Interaction error:', e);
+      }
+    });
+
     /**
-     * Update music system message
+     * Update music panel when song starts playing
+     * Updates the queue at top and shows now playing info
      */
-    function updateMusicSystem(player) {
-      // Implementation for dashboard live queue update
+    function updateMusicPanel(guildId, client) {
+      try {
+        const channelId = client.settings.get(guildId, `music.channel`);
+        const messageId = client.settings.get(guildId, `music.message`);
+        
+        if (!channelId || !messageId) return;
+        
+        const guild = client.guilds.cache.get(guildId);
+        if (!guild) return;
+        
+        const channel = guild.channels.cache.get(channelId);
+        if (!channel) return;
+        
+        // Get the player
+        const player = client.manager?.players?.get(guildId);
+        const queue = player?.queue;
+        
+        // Build embed with current playing info
+        var embeds = [
+          new MessageEmbed()
+            .setColor(ee.color)
+            .setTitle(`📃 Queue of __${guild.name}__`)
+            .setDescription(`**Currently there are __${queue?.tracks?.length || 0} Songs__ in the Queue**`)
+            .setThumbnail(guild.iconURL({ dynamic: true })),
+          new MessageEmbed()
+            .setColor(ee.color)
+            .setFooter({ text: guild.name, iconURL: guild.iconURL({ dynamic: true }) })
+            .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
+            .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
+            .setDescription(`> *I support ▶️ Youtube, 🎵 Spotify, ☁️ Soundcloud and direct MP3 Links!*`)
+        ];
+        
+        // If playing, show current song info
+        if (player && queue && queue.current) {
+          const current = queue.current;
+          const trackTitle = current?.info?.title || current?.title || "Unknown";
+          const thumbnail = current?.info?.artworkUrl || current?.thumbnail || null;
+          const uri = current?.info?.uri || current?.url || null;
+          const requester = current?.requester;
+          
+          embeds[1].setImage(`https://img.youtube.com/vi/${current?.info?.identifier || ''}/mqdefault.jpg`)
+            .setFooter({ text: `Requested by: ${requester?.user?.tag || requester?.username || "Unknown"}`, iconURL: requester?.user?.displayAvatarURL?.({ dynamic: true }) })
+            .addFields({ name: `🎵 Now Playing:`, value: `>>> [${trackTitle.substring(0, 60)}](${uri})`, inline: true })
+            .addFields({ name: `🔊 Volume:`, value: `>>> \`${player.volume} %\``, inline: true })
+            .addFields({ name: `🔄 Queue:`, value: `>>> \`${queue.tracks.length} song(s)\``, inline: true })
+            .setAuthor(trackTitle, thumbnail, uri);
+        }
+        
+        // Buttons - enable/disable based on whether playing
+        var components = [];
+        if (player && queue && queue.current) {
+          components = [
+            new MessageActionRow().addComponents([
+              new MessageButton().setStyle('PRIMARY').setCustomId('1').setEmoji('⏭').setLabel('Skip'),
+              new MessageButton().setStyle('DANGER').setCustomId('2').setEmoji('⏹').setLabel('Stop'),
+              new MessageButton().setStyle('SECONDARY').setCustomId('3').setEmoji(player.paused ? '▶️' : '⏸').setLabel(player.paused ? 'Resume' : 'Pause'),
+              new MessageButton().setStyle('SUCCESS').setCustomId('4').setEmoji('🔁').setLabel('Autoplay'),
+              new MessageButton().setStyle('PRIMARY').setCustomId('5').setEmoji('🔀').setLabel('Shuffle'),
+            ])
+          ];
+        } else {
+          components = [
+            new MessageActionRow().addComponents([
+              new MessageButton().setStyle('PRIMARY').setCustomId('1').setEmoji('⏭').setLabel('Skip').setDisabled(),
+              new MessageButton().setStyle('DANGER').setCustomId('2').setEmoji('⏹').setLabel('Stop').setDisabled(),
+              new MessageButton().setStyle('SECONDARY').setCustomId('3').setEmoji('⏸').setLabel('Pause').setDisabled(),
+              new MessageButton().setStyle('SUCCESS').setCustomId('4').setEmoji('🔁').setLabel('Autoplay').setDisabled(),
+              new MessageButton().setStyle('PRIMARY').setCustomId('5').setEmoji('🔀').setLabel('Shuffle').setDisabled(),
+            ])
+          ];
+        }
+        
+        channel.messages.fetch(messageId).then(msg => {
+          msg.edit({ embeds, components }).catch(() => {});
+        }).catch(() => {});
+        
+      } catch (e) {
+        console.log(`Music Panel Update Error: ${e.message}`);
+      }
+    }
+
+    /**
+     * Revert music panel when song finishes
+     * Shows queue at top with idle state (no current song)
+     */
+    function updateMusicPanelRevert(guildId, client) {
+      try {
+        const channelId = client.settings.get(guildId, `music.channel`);
+        const messageId = client.settings.get(guildId, `music.message`);
+        
+        if (!channelId || !messageId) return;
+        
+        const guild = client.guilds.cache.get(guildId);
+        if (!guild) return;
+        
+        const channel = guild.channels.cache.get(channelId);
+        if (!channel) return;
+        
+        // Check if there's still a queue
+        const player = client.manager?.players?.get(guildId);
+        const hasQueue = player && player.queue && player.queue.tracks && player.queue.tracks.length > 0;
+        
+        // Idle embeds (same as initial setupmusic panel)
+        var embeds = [
+          new MessageEmbed()
+            .setColor(ee.color)
+            .setTitle(`📃 Queue of __${guild.name}__`)
+            .setDescription(`**Currently there are __${player?.queue?.tracks?.length || 0} Songs__ in the Queue**`)
+            .setThumbnail(guild.iconURL({ dynamic: true })),
+          new MessageEmbed()
+            .setColor(ee.color)
+            .setFooter({ text: guild.name, iconURL: guild.iconURL({ dynamic: true }) })
+            .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
+            .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
+            .setDescription(`> *I support ▶️ Youtube, 🎵 Spotify, ☁️ Soundcloud and direct MP3 Links!*`)
+        ];
+        
+        // Disabled buttons
+        var components = [
+          new MessageActionRow().addComponents([
+            new MessageButton().setStyle('PRIMARY').setCustomId('1').setEmoji('⏭').setLabel('Skip').setDisabled(),
+            new MessageButton().setStyle('DANGER').setCustomId('2').setEmoji('⏹').setLabel('Stop').setDisabled(),
+            new MessageButton().setStyle('SECONDARY').setCustomId('3').setEmoji('⏸').setLabel('Pause').setDisabled(),
+            new MessageButton().setStyle('SUCCESS').setCustomId('4').setEmoji('🔁').setLabel('Autoplay').setDisabled(),
+            new MessageButton().setStyle('PRIMARY').setCustomId('5').setEmoji('🔀').setLabel('Shuffle').setDisabled(),
+          ])
+        ];
+        
+        channel.messages.fetch(messageId).then(msg => {
+          msg.edit({ embeds, components }).catch(() => {});
+        }).catch(() => {});
+        
+      } catch (e) {
+        console.log(`Music Panel Revert Error: ${e.message}`);
+      }
     }
 
     /**
