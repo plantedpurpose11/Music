@@ -100,6 +100,7 @@ module.exports = {
       }).then(msg => {
         client.settings.set(message.guild.id, channel.id, `music.channel`);
         client.settings.set(message.guild.id, msg.id, `music.message`);
+        client.settings.set(message.guild.id, msg.createdTimestamp, `music.panelTime`);
         //send a success message
         return message.reply(`${client.allEmojis.check_mark} **Successfully set up the Music System in:** <#${channel.id}>`)
       });
