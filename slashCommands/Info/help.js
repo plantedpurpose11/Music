@@ -80,7 +80,13 @@ module.exports = {
           .setDescription(`**[Invite me with __Slash Commands__ Permissions](https://discord.com/api/oauth2/authorize?client_id=${client.user.id}&permissions=8&scope=bot%20applications.commands), cause all of my Commands are available as Slash Commands too!**\n\n> Check out the [**Dashboard**](${websiteSettings.website.domain}/dashboard/${guild.id}) or the [**Live Music Queue**](${websiteSettings.website.domain}/queue/${guild.id})`)
           .setFooter({ text: `To see command Descriptions and Information, type: ${prefix}help [CMD NAME]`, iconURL: client.user.displayAvatarURL() });
         const commands = (category) => {
-          return client.commands.filter((cmd) => cmd.category === category).map((cmd) => `\`${cmd.name}\``);
+          // Get regular commands
+          const cmds = client.commands.filter((cmd) => cmd.category === category).map((cmd) => `\`${cmd.name}\``);
+          // Get slash commands in this category (stored in slashCommands collection)
+          const slashcmds = client.slashCommands.filter((cmd) => cmd.category === category).map((cmd) => `/${cmd.name}`);
+          // Combine both, removing duplicates
+          const all = [...new Set([...cmds, ...slashcmds])];
+          return all.length > 0 ? all : [`\`No ${category} commands\``];
         };
         try {
           for (let i = 0; i < client.categories.length; i += 1) {
