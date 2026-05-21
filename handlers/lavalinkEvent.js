@@ -384,7 +384,7 @@ module.exports = (client) => {
           
           // Map playlist names to YouTube URLs (Spotify requires a plugin — using YouTube instead)
             switch (playlistValue?.toLowerCase()) {
-              case 'pop': playlistUrl = 'https://www.youtube.com/playlist?list=PL8IGHPIdGnykbWFdt2xy1calQPV_Akoxb'; break;
+              case 'pop': playlistUrl = 'https://www.youtube.com/playlist?list=PLDfKAXSB8WA8FpDilTg6RBnNh_bvXIbXR'; break;
               case 'strange-fruits': playlistUrl = 'https://www.youtube.com/playlist?list=PL3PUigHACEnEuhZ2BHk-AavVkFx9i9FS6'; break;
               case 'gaming': playlistUrl = 'https://www.youtube.com/playlist?list=PLBTkdvSeZcVtoK-zVE7TnFHLRjIQ6d4LC'; break;
               case 'chill': playlistUrl = 'https://www.youtube.com/playlist?list=PLyORnIW1xT6xL7lVBSCsEoI0NPlpcwzj2'; break;
@@ -462,27 +462,41 @@ module.exports = (client) => {
           }
           
           switch (interaction.customId) {
-            case 'Skip': // Skip
+            case '1': // Skip
               await player.skip();
               break;
-            case 'Stop': // Stop
+            case '2': // Stop
               await player.destroy();
               break;
-            case 'Pause': // Pause/Resume
+            case '3': // Pause/Resume
               if (player.paused) {
                 await player.resume();
               } else {
                 await player.pause();
               }
               break;
-            case 'Autoplay': // Autoplay toggle
-              const autoplay = !player.get('autoplay');
-              player.set('autoplay', autoplay);
+            case '4': // Autoplay toggle
+              {
+                const autoplay = !player.get('autoplay');
+                player.set('autoplay', autoplay);
+              }
               break;
-            case 'Shuffle': // Shuffle
+            case '5': // Shuffle
               if (player.queue && player.queue.tracks.length > 1) {
                 await player.queue.shuffle();
               }
+              break;
+            case '6': // Song Loop
+              await player.setRepeatMode(player.repeatMode === 'track' ? 'off' : 'track');
+              break;
+            case '7': // Queue Loop
+              await player.setRepeatMode(player.repeatMode === 'queue' ? 'off' : 'queue');
+              break;
+            case '8': // Forward +10s
+              await player.seek(player.position + 10000);
+              break;
+            case '9': // Rewind -10s
+              await player.seek(Math.max(0, player.position - 10000));
               break;
             default:
               return;
@@ -557,11 +571,17 @@ module.exports = (client) => {
           components = [
             new MessageActionRow().addComponents([
               new MessageButton().setStyle('PRIMARY').setCustomId('1').setEmoji('⏭').setLabel('Skip'),
-              new MessageButton().setStyle('DANGER').setCustomId('2').setEmoji('⏹').setLabel('Stop'),
+              new MessageButton().setStyle('DANGER').setCustomId('2').setEmoji('🏠').setLabel('Stop'),
               new MessageButton().setStyle('SECONDARY').setCustomId('3').setEmoji(player.paused ? '▶️' : '⏸').setLabel(player.paused ? 'Resume' : 'Pause'),
               new MessageButton().setStyle('SUCCESS').setCustomId('4').setEmoji('🔁').setLabel('Autoplay'),
               new MessageButton().setStyle('PRIMARY').setCustomId('5').setEmoji('🔀').setLabel('Shuffle'),
-            ])
+            ]),
+            new MessageActionRow().addComponents([
+              new MessageButton().setStyle('SUCCESS').setCustomId('6').setEmoji('🔁').setLabel('Song'),
+              new MessageButton().setStyle('SUCCESS').setCustomId('7').setEmoji('🔂').setLabel('Queue'),
+              new MessageButton().setStyle('PRIMARY').setCustomId('8').setEmoji('⏩').setLabel('+10 Sec'),
+              new MessageButton().setStyle('PRIMARY').setCustomId('9').setEmoji('⏪').setLabel('-10 Sec'),
+            ]),
           ];
         } else {
           components = [
