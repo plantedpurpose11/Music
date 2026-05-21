@@ -40,7 +40,7 @@ module.exports = {
         }) })
         .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
         .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
-        .setDescription(`> *I support <:yt:1506798187422421153> Youtube, <:soundcloud:1506798096229732382> Soundcloud, 🎧 Bandcamp, 🎶 Deezer and direct MP3 Links!*`)
+        .setDescription(`> *I support <:yt:1506798187422421153> Youtube, <:soundcloud:1506798096229732382> Soundcloud, 🎧 Bandcamp, and direct MP3 Links!*`)
       ]
       var Emojis = [
         `0️⃣`,
