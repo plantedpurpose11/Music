@@ -630,7 +630,7 @@ module.exports = (client) => {
                   value: t.substr(0, 25),
                   description: `Load a Music-Playlist: '${t}'`.substr(0, 50),
                   emoji: [`0️⃣`,`1️⃣`,`2️⃣`,`3️⃣`,`4️⃣`,`5️⃣`,`6️⃣`,`7️⃣`,`8️⃣`,`9️⃣`,`🔟`][index]
-                }))
+                })))
             ]),
             new MessageActionRow().addComponents([
               new MessageButton().setStyle('PRIMARY').setCustomId('Skip').setEmoji('⏭').setLabel('Skip').setDisabled(),
