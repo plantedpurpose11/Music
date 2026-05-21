@@ -375,21 +375,21 @@ module.exports = (client) => {
           const playlistValue = interaction.values?.[0];
           let playlistUrl = '';
           
-          // Map playlist names to URLs
-          switch (playlistValue?.toLowerCase()) {
-            case 'pop': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DX0sUXhucEJJP'; break;
-            case 'strange-fruits': playlistUrl = 'https://open.spotify.com/playlist/6xGLprv9fmlMgeAMpW0x51'; break;
-            case 'gaming': playlistUrl = 'https://open.spotify.com/playlist/4a54P2VHy30WTi7gix0KW6'; break;
-            case 'chill': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DX4WYpdgoIcn6'; break;
-            case 'rock': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DWXRqgorJj26U'; break;
-            case 'jazz': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DXbITWG1ZJKYt'; break;
-            case 'blues': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DXd9rSDyQguIk'; break;
-            case 'metal': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DX9qNs32fujYe'; break;
-            case 'magic-release': playlistUrl = 'https://www.youtube.com/playlist?list=PLYUn4Yaogdagvwe69dczceHTNm0K_ZG3P'; break;
-            case 'ncs | no copyright music': playlistUrl = 'https://open.spotify.com/playlist/7sZbq8QGyMnhKPcLJvCUFD'; break;
-            case 'default': playlistUrl = 'https://open.spotify.com/playlist/37i9dQZF1DX0sUXhucEJJP'; break;
-            default: playlistUrl = '';
-          }
+          // Map playlist names to YouTube URLs (Spotify requires a plugin — using YouTube instead)
+            switch (playlistValue?.toLowerCase()) {
+              case 'pop': playlistUrl = 'https://www.youtube.com/playlist?list=PL8IGHPIdGnykbWFdt2xy1calQPV_Akoxb'; break;
+              case 'strange-fruits': playlistUrl = 'https://www.youtube.com/playlist?list=PL3PUigHACEnEuhZ2BHk-AavVkFx9i9FS6'; break;
+              case 'gaming': playlistUrl = 'https://www.youtube.com/playlist?list=PLBTkdvSeZcVtoK-zVE7TnFHLRjIQ6d4LC'; break;
+              case 'chill': playlistUrl = 'https://www.youtube.com/playlist?list=PLyORnIW1xT6xL7lVBSCsEoI0NPlpcwzj2'; break;
+              case 'rock': playlistUrl = 'https://www.youtube.com/playlist?list=PLSrnH36IP8QMh8B2BQ_nd0qKyO_Dm3vSh'; break;
+              case 'jazz': playlistUrl = 'https://www.youtube.com/playlist?list=PL8F6B0753B2CCA128'; break;
+              case 'blues': playlistUrl = 'https://www.youtube.com/playlist?list=PLFjmckBbDlzSE47xD0FivigDOARiLJl61'; break;
+              case 'metal': playlistUrl = 'https://www.youtube.com/playlist?list=PLmXxqSJJq-yUwqtbp8MHBoTDoDULMoViq'; break;
+              case 'magic-release': playlistUrl = 'https://www.youtube.com/playlist?list=PLYUn4Yaogdagvwe69dczceHTNm0K_ZG3P'; break;
+              case 'ncs | no copyright music': playlistUrl = 'https://www.youtube.com/playlist?list=PLRBp0Fe2GpgnIh0AiYKh7o7HnYAej-5ph'; break;
+              case 'default': playlistUrl = 'https://www.youtube.com/playlist?list=PL8IGHPIdGnykbWFdt2xy1calQPV_Akoxb'; break;
+              default: playlistUrl = '';
+            }
           
           if (!playlistUrl) {
             return interaction.reply({ 
