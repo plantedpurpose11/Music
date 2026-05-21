@@ -15,6 +15,8 @@ const { MessageEmbed } = require("discord.js");
       try {
         const { guildId } = interaction;
         const nameArg = interaction.options.getString("name");
+        client.infos.ensure(guildId, {});
+
         const allPlaylists = client.infos.get(guildId, "playlists") || {};
 
         if (!nameArg) {
