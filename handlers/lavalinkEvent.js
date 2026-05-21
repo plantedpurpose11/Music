@@ -286,8 +286,10 @@ module.exports = (client) => {
     // Track end event - revert music panel when song finishes
     client.manager?.on("trackEnd", async (player) => {
       try {
-        // Revert the music panel to idle state when song finishes
-        updateMusicPanelRevert(player.guildId, client);
+        // Only revert when there are no more songs — prevents flicker between tracks
+        if (!player.queue?.tracks?.length) {
+          updateMusicPanelRevert(player.guildId, client);
+        }
       } catch (error) {
         console.log(error)
       }
@@ -314,6 +316,8 @@ module.exports = (client) => {
             } catch(e) { console.log("Autoplay search failed:", e); }
           }
         }
+        // Queue is empty and autoplay didn't save us — reset the panel to idle
+        updateMusicPanelRevert(player.guildId, client);
         if (settings.leaveOnFinish) {
           await player.destroy();
         }
@@ -328,6 +332,9 @@ module.exports = (client) => {
         const guildId = player.guildId;
         let guild = client.guilds.cache.get(guildId);
         if (!guild) return;
+        
+        // Reset the music panel to idle state when the player is destroyed
+        updateMusicPanelRevert(guildId, client);
         
         const cur = currentTrack(player);
         const queueTracks = player.queue?.tracks || [];
@@ -525,7 +532,7 @@ module.exports = (client) => {
             .setFooter({ text: guild.name, iconURL: guild.iconURL({ dynamic: true }) })
             .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
             .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
-            .setDescription(`> *I support ▶️ Youtube, 🎵 Spotify, ☁️ Soundcloud and direct MP3 Links!*`)
+            .setDescription(`> *I support <:yt:1506798187422421153> Youtube, <:soundcloud:1506798096229732382> Soundcloud, 🎧 Bandcamp, and direct MP3 Links!*`)
         ];
         
         // If playing, show current song info
@@ -610,19 +617,36 @@ module.exports = (client) => {
             .setFooter({ text: guild.name, iconURL: guild.iconURL({ dynamic: true }) })
             .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
             .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
-            .setDescription(`> *I support ▶️ Youtube, 🎵 Spotify, ☁️ Soundcloud and direct MP3 Links!*`)
+            .setDescription(`> *I support <:yt:1506798187422421153> Youtube, <:soundcloud:1506798096229732382> Soundcloud, 🎧 Bandcamp, and direct MP3 Links!*`)
         ];
         
-        // Disabled buttons
-        var components = [
-          new MessageActionRow().addComponents([
-            new MessageButton().setStyle('PRIMARY').setCustomId('1').setEmoji('⏭').setLabel('Skip').setDisabled(),
-            new MessageButton().setStyle('DANGER').setCustomId('2').setEmoji('⏹').setLabel('Stop').setDisabled(),
-            new MessageButton().setStyle('SECONDARY').setCustomId('3').setEmoji('⏸').setLabel('Pause').setDisabled(),
-            new MessageButton().setStyle('SUCCESS').setCustomId('4').setEmoji('🔁').setLabel('Autoplay').setDisabled(),
-            new MessageButton().setStyle('PRIMARY').setCustomId('5').setEmoji('🔀').setLabel('Shuffle').setDisabled(),
-          ])
-        ];
+        // All disabled — mirrors the original setupmusic panel layout exactly
+          var components = [
+            new MessageActionRow().addComponents([
+              new MessageSelectMenu()
+                .setCustomId(`MessageSelectMenu`)
+                .addOptions([`Pop`, `Strange-Fruits`, `Gaming`, `Chill`, `Rock`, `Jazz`, `Blues`, `Metal`, `Magic-Release`, `NCS | No Copyright Music`, `Default`].map((t, index) => ({
+                  label: t.substr(0, 25),
+                  value: t.substr(0, 25),
+                  description: `Load a Music-Playlist: '${t}'`.substr(0, 50),
+                  emoji: [`0️⃣`,`1️⃣`,`2️⃣`,`3️⃣`,`4️⃣`,`5️⃣`,`6️⃣`,`7️⃣`,`8️⃣`,`9️⃣`,`🔟`][index]
+                }))
+            ]),
+            new MessageActionRow().addComponents([
+              new MessageButton().setStyle('PRIMARY').setCustomId('Skip').setEmoji('⏭').setLabel('Skip').setDisabled(),
+              new MessageButton().setStyle('DANGER').setCustomId('Stop').setEmoji('🏠').setLabel('Stop').setDisabled(),
+              new MessageButton().setStyle('SECONDARY').setCustomId('Pause').setEmoji('⏸').setLabel('Pause').setDisabled(),
+              new MessageButton().setStyle('SUCCESS').setCustomId('Autoplay').setEmoji('🔁').setLabel('Autoplay').setDisabled(),
+              new MessageButton().setStyle('PRIMARY').setCustomId('Shuffle').setEmoji('🔀').setLabel('Shuffle').setDisabled(),
+            ]),
+            new MessageActionRow().addComponents([
+              new MessageButton().setStyle('SUCCESS').setCustomId('Song').setEmoji('🔁').setLabel('Song').setDisabled(),
+              new MessageButton().setStyle('SUCCESS').setCustomId('Queue').setEmoji('🔂').setLabel('Queue').setDisabled(),
+              new MessageButton().setStyle('PRIMARY').setCustomId('Forward').setEmoji('⏩').setLabel('+10 Sec').setDisabled(),
+              new MessageButton().setStyle('PRIMARY').setCustomId('Rewind').setEmoji('⏪').setLabel('-10 Sec').setDisabled(),
+              new MessageButton().setStyle('PRIMARY').setCustomId('Lyrics').setEmoji('📝').setLabel('Lyrics').setDisabled(),
+            ]),
+          ];
         
         channel.messages.fetch(messageId).then(msg => {
           msg.edit({ embeds, components }).catch(() => {});
