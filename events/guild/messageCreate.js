@@ -31,11 +31,9 @@ module.exports = async (client, message) => {
   // Check if this is the music request channel - process song search without prefix
   let musicChannel = client.settings.get(message.guild.id, `music.channel`);
   if (musicChannel && message.channel.id === musicChannel) {
-    // Auto-delete user messages in music channel after 20 seconds
+    // Delete user messages immediately in music channel
     if (!message.author.bot) {
-      setTimeout(() => {
-        message.delete().catch(() => {});
-      }, 20000);
+      message.delete().catch(() => {});
     }
     
     // If message starts with prefix, block it (use commands elsewhere)
@@ -60,11 +58,9 @@ module.exports = async (client, message) => {
         
         if (result && (result.loadType === "playlist" || result.loadType === "PLAYLIST_LOADED")) {
           for (const t of result.tracks) { t.requester = message.author; await player.queue.add(t); }
-          message.reply(`${client.allEmojis.check_mark} **Added \`${result.tracks.length}\` Songs from \`${result.playlist?.name || 'playlist'}\` to the Queue!**`).catch(() => {});
         } else {
           track.requester = message.author;
           await player.queue.add(track);
-          message.reply(`${client.allEmojis.check_mark} **Added to Queue:** \`${trackTitle(track)}\``).catch(() => {});
         }
         
         // Start playing if nothing is playing
@@ -72,15 +68,7 @@ module.exports = async (client, message) => {
           player.play();
         }
         
-        var embed = new Discord.MessageEmbed()
-          .setColor(ee.color)
-          .setTitle(`<a:playing:840260446572052350> Now ${player.queue.current.isStream ? "LIVE" : "Playing"}: ${trackTitle(player.queue.current)}`)
-          .setURL(player.queue.current.uri)
-          .setThumbnail(player.queue.current.thumbnail)
-          .addField(`<:clock:840260437050245229> Duration:`, player.queue.current.isStream ? `LIVE` : new Date(player.queue.current.duration).toISOString().substr(14, 8), true)
-          .addField(`<:musical:840260441718132736> Song by:`, player.queue.current.author, true)
-          .setFooter({ text: `Requested by: ${message.author.tag}`, iconURL: message.author.displayAvatarURL({ dynamic: true }) })
-        message.channel.send({ embeds: [embed] }).catch(() => {});
+        // Panel updates automatically via trackStart event — no extra messages needed
         return;
       } catch (e) {
         console.log(e.stack ? e.stack : e);
