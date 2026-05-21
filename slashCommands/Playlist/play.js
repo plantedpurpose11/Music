@@ -27,6 +27,9 @@ const { MessageEmbed } = require("discord.js");
         if (channel.guild.members.me.voice.channel && channel.guild.members.me.voice.channel.id !== channel.id)
           return interaction.editReply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} I'm already in another voice channel!`)] });
 
+        client.infos.ensure(guildId, {});
+
+
         const allPlaylists = client.infos.get(guildId, "playlists") || {};
         const playlist = allPlaylists[playlistName];
 
