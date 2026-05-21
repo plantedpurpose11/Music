@@ -16,6 +16,8 @@ const { MessageEmbed } = require("discord.js");
         const playlistName = args[0]?.toLowerCase();
         const position     = parseInt(args[1]);
         if (!playlistName || isNaN(position)) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Usage: \`playlistremove <name> <position>\`**`)] });
+        client.infos.ensure(guild\.id, {});
+
         const allPlaylists = client.infos.get(guild.id, "playlists") || {};
         const playlist = allPlaylists[playlistName];
         if (!playlist) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Playlist not found!**`).setDescription(`Available: \`${Object.keys(allPlaylists).join(", ")||"None"}\``)] });
