@@ -393,7 +393,7 @@ module.exports = (client) => {
             'metal':                'metal music best hits',
             'magic-release':        'magic release music mix',
             'ncs | no copyright music': 'NCS no copyright music mix',
-            'default':              'popular music hits mix',
+            'clash of clans':       'https://youtube.com/playlist?list=PL8A9-t0gY5TmTlR1bndB9KKd66UKcCvaV&si=m5_ZgUSx2D0e4Sht',
           };
           
           const searchQuery = GENRE_QUERIES[playlistValue?.toLowerCase()];
@@ -646,7 +646,7 @@ module.exports = (client) => {
             new MessageActionRow().addComponents([
               new MessageSelectMenu()
                 .setCustomId(`MessageSelectMenu`)
-                .addOptions([`Pop`, `Strange-Fruits`, `Gaming`, `Chill`, `Rock`, `Jazz`, `Blues`, `Metal`, `Magic-Release`, `NCS | No Copyright Music`, `Default`].map((t, index) => ({
+                .addOptions([`Pop`, `Strange-Fruits`, `Gaming`, `Chill`, `Rock`, `Jazz`, `Blues`, `Metal`, `Magic-Release`, `NCS | No Copyright Music`, `Clash of Clans`].map((t, index) => ({
                   label: t.substr(0, 25),
                   value: t.substr(0, 25),
                   description: `Load a Music-Playlist: '${t}'`.substr(0, 50),
