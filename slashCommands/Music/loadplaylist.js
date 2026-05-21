@@ -119,16 +119,18 @@ module.exports = {
         ephemeral: true 
       });
       
-    } catch (e) {
-      console.log(e.stack ? e.stack : e);
-      interaction.reply({ 
-        embeds: [new MessageEmbed()
-          .setColor(ee.wrongcolor)
-          .setTitle(`${client.allEmojis.x} Error`)
-          .setDescription(`\`\`\`${e}\`\`\``)
-        ], 
-        ephemeral: true 
-      });
+        } catch (e) {
+        console.log(e.stack ? e.stack : e);
+        const replyFn = interaction.replied || interaction.deferred
+          ? interaction.editReply.bind(interaction)
+          : interaction.reply.bind(interaction);
+        replyFn({ 
+          embeds: [new MessageEmbed()
+            .setColor(ee.wrongcolor)
+            .setTitle(`${client.allEmojis.x} Error`)
+            .setDescription(`\`\`\`${e}\`\`\``)
+          ], 
+          ephemeral: true 
+        });
     }
-  }
-};
+  };

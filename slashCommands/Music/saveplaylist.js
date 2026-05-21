@@ -51,24 +51,24 @@ module.exports = {
         });
       }
       
-      // Get all tracks from the queue
-      const tracks = player.queue.tracks.map(track => {
-        return {
+      // Get all tracks — currently playing song first, then the queued tracks
+        const mapTrack = t => ({
           info: {
-            identifier: track.info.identifier,
-            uri: track.info.uri,
-            title: track.info.title,
-            author: track.info.author,
-            length: track.info.length,
-            isStream: track.info.isLive,
-            position: track.info.position || 0
+            identifier: t.info.identifier,
+            uri: t.info.uri,
+            title: t.info.title,
+            author: t.info.author,
+            length: t.info.length,
+            isStream: t.info.isStream,
+            position: t.info.position || 0
           },
           requester: {
-            id: track.requester?.id,
-            tag: track.requester?.user?.tag || track.requester?.tag
+            id: t.requester?.id,
+            tag: t.requester?.user?.tag || t.requester?.tag
           }
-        };
-      });
+        });
+        const currentTrackData = player.queue.current ? [mapTrack(player.queue.current)] : [];
+        const tracks = [...currentTrackData, ...player.queue.tracks.map(mapTrack)];
       
       if (tracks.length === 0) {
         return interaction.reply({ 
@@ -80,10 +80,7 @@ module.exports = {
         });
       }
       
-      // Save to database - use playlists key in infos enmap
-      const playlistKey = `playlist_${guildId}_${playlistName.toLowerCase().replace(/\s+/g, '_')}`;
-      
-      // Check if playlist already exists
+      // Check if playlist already existsexists
       const existingPlaylists = client.infos.get(guildId, "playlists") || {};
       if (existingPlaylists[playlistName.toLowerCase()]) {
         return interaction.reply({ 
