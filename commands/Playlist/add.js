@@ -19,6 +19,8 @@ const { MessageEmbed } = require("discord.js");
         if (parts.length < 2) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Usage: \`playlistadd <playlist name> | <song>\`**`)] });
         const playlistName = parts[0].trim().toLowerCase();
         const songQuery    = parts.slice(1).join("|").trim();
+        client.infos.ensure(guild\.id, {});
+
         const allPlaylists = client.infos.get(guild.id, "playlists") || {};
         const playlist = allPlaylists[playlistName];
         if (!playlist) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Playlist not found!**`).setDescription(`Available: \`${Object.keys(allPlaylists).join(", ")||"None"}\``)] });
