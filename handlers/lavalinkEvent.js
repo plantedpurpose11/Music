@@ -66,9 +66,10 @@ module.exports = (client) => {
             !m.user.bot && !m.voice.deaf && !m.voice.selfDeaf
           );
           
-          // If only bot is in channel OR no human is listening, leave
-          if (members.size <= 1 || listeningMembers.size === 0) {
-            console.log(`Idle Check`.brightYellow + ` - Bot alone in ${guild.name}, leaving voice channel...`);
+          // Only leave if there are truly no humans in the channel at all
+          // (self-deafened users still want to listen — don't boot them)
+          if (members.size === 0) {
+            console.log(`Idle Check`.brightYellow + ` - Bot truly alone in ${guild.name}, leaving...`);
             player.destroy();
           }
         }
