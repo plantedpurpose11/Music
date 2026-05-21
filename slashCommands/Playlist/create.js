@@ -52,6 +52,9 @@ const { MessageEmbed } = require("discord.js");
         if (tracks.length === 0)
           return interaction.editReply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} Queue is empty!`)] });
 
+        client.infos.ensure(guildId, {});
+
+
         const allPlaylists = client.infos.get(guildId, "playlists") || {};
         if (allPlaylists[playlistName.toLowerCase()])
           return interaction.editReply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} A playlist named "${playlistName}" already exists!`).setDescription("Use `/playlist delete` first, or choose a different name.")] });
