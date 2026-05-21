@@ -411,32 +411,37 @@ module.exports = (client) => {
           });
           
           try {
-            // Use getOrCreatePlayer from playerHelpers
             const { getOrCreatePlayer, searchTrack } = require('./playerHelpers');
             const player = await getOrCreatePlayer(client, guild.id, member.voice.channel.id, channel.id, member);
             
-            // Search and add the playlist
             const { track, result } = await searchTrack(player, playlistUrl, member);
             
-            if (result && result.loadType === 'playlist') {
-              // It's a playlist - add all tracks
+            let addedCount = 0;
+            if (result && (result.loadType === 'playlist' || result.loadType === 'PLAYLIST_LOADED') && result.tracks?.length > 0) {
               for (const t of result.tracks) {
                 t.requester = member;
                 await player.queue.add(t);
+                addedCount++;
               }
             } else if (track) {
-              // Single track
               track.requester = member;
               await player.queue.add(track);
+              addedCount++;
             }
             
-            // Start playing if not already
+            if (addedCount === 0) {
+              return interaction.editReply({
+                content: `❌ Could not load the **${playlistValue}** playlist — it may be private or unavailable. Try \`/music play\` with a song name instead.`,
+                ephemeral: true
+              });
+            }
+            
             if (!player.playing && !player.paused) {
               await player.play();
             }
             
             await interaction.editReply({ 
-              content: `✅ Loaded: **${playlistValue}**`,
+              content: `✅ Loaded **${addedCount}** song(s) from the **${playlistValue}** playlist!`,
               ephemeral: true 
             });
             
