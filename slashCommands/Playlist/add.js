@@ -19,6 +19,9 @@ const { MessageEmbed } = require("discord.js");
         const playlistName = interaction.options.getString("name").trim().toLowerCase();
         const songQuery    = interaction.options.getString("song").trim();
 
+        client.infos.ensure(guildId, {});
+
+
         const allPlaylists = client.infos.get(guildId, "playlists") || {};
         const playlist = allPlaylists[playlistName];
 
