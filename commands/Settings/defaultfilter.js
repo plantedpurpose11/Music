@@ -1,64 +1,22 @@
-const {
-  MessageEmbed
-} = require("discord.js");
-const config = require("../../botconfig/config.json");
-const ee = require("../../botconfig/embed.json");
-const settings = require("../../botconfig/settings.json");
-const filters = require("../../botconfig/filters.json")
-module.exports = {
-  name: "defaultfilter", //the command name for execution & for helpcmd [OPTIONAL]
-  aliases: ["dfilter"],
-  category: "Settings",
-  usage: "defaultfilter <Filter1 Filter2>",
-  cooldown: 10, //the command cooldown for execution & for helpcmd [OPTIONAL]
-  description: "Defines the Default Filter(s)", //the command description for helpcmd [OPTIONAL]
-  memberpermissions: ["MANAGE_GUILD "], //Only allow members with specific Permissions to execute a Commmand [OPTIONAL]
-  requiredroles: [], //Only allow specific Users with a Role to execute a Command [OPTIONAL]
-  alloweduserids: [], //Only allow specific Users to execute a Command [OPTIONAL], //Only allow specific Users to execute a Command [OPTIONAL]
-
-  run: async (client, message, args) => {
-    try {
-      //things u can directly access in an interaction!
-      const {
-        member,
-      } = message;
-      const {
-        guild
-      } = member;
-      if (args.some(a => !filters[a])) {
-        return message.reply({
-          embeds: [
-            new MessageEmbed()
-            .setColor(ee.wrongcolor)
-            .setFooter({ text: ee.footertext, iconURL: ee.footericon })
-            .setTitle(`${client.allEmojis.x} **You added at least one Filter, which is invalid!**`)
-            .setDescription("**To define Multiple Filters add a SPACE (` `) in between!**")
-            .addFields({ name: "**All Valid Filters:**", value: Object.keys(filters).map(f => `\`${f}\``).join(", ") })
-          ],
-        })
-      }
-      client.settings.set(guild.id, args, "defaultfilters");
-      let newfilters = args.length > 0 ?args.map(a=>`\`${a}\``).join(", ") : `\`NOTHING\`\n> **Command Usage:** \`${client.settings.get(guild.id, "prefix")}defaultfilter <filter1 filter2 etc.>\``; 
-      return message.reply({
-        embeds: [
-          new MessageEmbed()
-          .setColor(ee.color)
-          .setFooter({ text: ee.footertext, iconURL: ee.footericon })
-          .setTitle(`${client.allEmojis.check_mark} **The new Default-Filter${args.length > 1 ? "s are": " is"}:**`)
-          .setDescription(`${newfilters}`)
-        ],
-      })
-    } catch (e) {
-      console.log(String(e.stack).bgRed)
+const { MessageEmbed } = require("discord.js");
+  const ee = require("../../botconfig/embed.json");
+  const filters = require("../../botconfig/filters.json");
+  module.exports = {
+    name: "defaultfilter",
+    category: "Settings",
+    aliases: ["setfilter","defaultfilters"],
+    usage: "defaultfilter <filter1> [filter2] ...",
+    cooldown: 10,
+    description: "Sets the default filter(s) for the bot",
+    memberpermissions: ["MANAGE_GUILD"],
+    requiredroles: [],
+    alloweduserids: [],
+    run: async (client, message, args) => {
+      try {
+        if (!args[0]) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} **Please provide at least one filter!**`).addFields({ name: "**All Valid Filters:**", value: Object.keys(filters).map(f => `\`${f}\``).join(", ") })] });
+        if (args.some(a => !filters[a])) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.x} **At least one filter is invalid!**`).addFields({ name: "**All Valid Filters:**", value: Object.keys(filters).map(f => `\`${f}\``).join(", ") })] });
+        client.settings.set(message.guild.id, args, "defaultfilters");
+        return message.reply({ embeds: [new MessageEmbed().setColor(ee.color).setFooter({ text: ee.footertext, iconURL: ee.footericon }).setTitle(`${client.allEmojis.check_mark} **Default filter${args.length > 1 ? "s" : ""} set to: ${args.map(a => `\`${a}\``).join(", ")}**`)] });
+      } catch (e) { console.log(String(e.stack).bgRed); }
     }
-  }
-}
-/**
- * @INFO
- * Bot Coded by Tomato#6966 | https://github.com/Tomato6966/Discord-Js-Handler-Template
- * @INFO
- * Work for Milrato Development | https://milrato.eu
- * @INFO
- * Please mention Him / Milrato Development, when using this Code!
- * @INFO
- */
+  };
