@@ -13,6 +13,8 @@ module.exports = {
       const { member, guildId } = interaction;
       
       // Get all playlists
+      client.infos.ensure(guildId, {});
+
       const allPlaylists = client.infos.get(guildId, "playlists") || {};
       const playlistNames = Object.keys(allPlaylists);
       
