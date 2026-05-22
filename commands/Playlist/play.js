@@ -20,7 +20,7 @@ const { MessageEmbed } = require("discord.js");
         if (!voiceChannel) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please join a voice channel first!**`)] });
         if (guild.members.me.voice.channel && guild.members.me.voice.channel.id !== voiceChannel.id)
           return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **I'm already in another voice channel!**`)] });
-        client.infos.ensure(guild\.id, {});
+        client.infos.ensure(guild.id, {});
 
         const allPlaylists = client.infos.get(guild.id, "playlists") || {};
         const playlist = allPlaylists[playlistName];
