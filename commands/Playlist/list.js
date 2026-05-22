@@ -13,7 +13,7 @@ const { MessageEmbed } = require("discord.js");
     run: async (client, message, args) => {
       try {
         const { guild } = message;
-        client.infos.ensure(guild\.id, {});
+        client.infos.ensure(guild.id, {});
 
         const allPlaylists = client.infos.get(guild.id, "playlists") || {};
         if (!args[0]) {
