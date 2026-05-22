@@ -15,7 +15,7 @@ const { MessageEmbed } = require("discord.js");
         const { guild } = message;
         const playlistName = args.join(" ").toLowerCase();
         if (!playlistName) return message.reply({ embeds: [new MessageEmbed().setColor(ee.wrongcolor).setTitle(`${client.allEmojis.x} **Please provide a playlist name!**`)] });
-        client.infos.ensure(guild\.id, {});
+        client.infos.ensure(guild.id, {});
 
         const allPlaylists = client.infos.get(guild.id, "playlists") || {};
         const playlist = allPlaylists[playlistName];
