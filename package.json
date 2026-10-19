@@ -24,6 +24,10 @@
     "tweetnacl": "^1.0.3",
     "url": "^0.11.0"
   },
+  "scripts": {
+  "start": "node index.js",
+  "postinstall": "npm rebuild better-sqlite3"
+},
   "overrides": {
     "serialize-javascript": "^7.0.0"
   },
