@@ -1,4 +1,16 @@
 {
+  "name": "musicium_r8_dashboard",
+  "version": "8.1.0",
+  "description": "An advanced Discord Music Bot with a Dashboard, using distube.js.org having an interactive button & menu system and many features! Supported Features: Spotify • YouTube • SoundCloud • Live Stream • Audio Filtering • DJ Roles • Autoplay • Autoresume • Dashboard + Live Queue • ...",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node index.js"
+  },
+  "allowScripts": {
+    "better-sqlite3": true,
+    "ffmpeg-static": true
+  },
   "dependencies": {
     "@discordjs/builders": "^0.9.0",
     "@discordjs/voice": "^0.19.2",
@@ -24,20 +36,8 @@
     "tweetnacl": "^1.0.3",
     "url": "^0.11.0"
   },
-  "scripts": {
-  "start": "node index.js",
-  "postinstall": "npm rebuild better-sqlite3"
-},
   "overrides": {
     "serialize-javascript": "^7.0.0"
-  },
-  "name": "musicium_r8_dashboard",
-  "description": "An advanced Discord Music Bot with a Dashboard, using distube.js.org having an interactive button & menu system and many features! Supported Features: Spotify • YouTube • SoundCloud • Live Stream • Audio Filtering • DJ Roles • Autoplay • Autoresume • Dashboard + Live Queue • ...",
-  "version": "8.1.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "node index.js",
-    "start": "node index.js"
   },
   "repository": {
     "type": "git",
