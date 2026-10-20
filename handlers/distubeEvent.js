@@ -1578,26 +1578,29 @@ module.exports = (client) => {
 
 
   //For the Music Request System
-  function generateQueueEmbed(client, guildId, leave) {
-    let guild = client.guilds.cache.get(guildId)
+  //For the Music Request System
+function generateQueueEmbed(client, guildId, leave) {
+    let guild = client.guilds.cache.get(guildId);
     if (!guild) return;
+
+    // Fetch custom banner or fallback to default
+    const defaultBanner = 'https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png';
+    const customBanner = client.settings.get(guildId, 'musicBanner');
+    const finalBanner = customBanner || defaultBanner;
+
     var embeds = [
-      new MessageEmbed()
-      .setColor(ee.color)
-      .setTitle(`📃 Queue of __${guild.name}__`)
-      .setDescription(`**Currently there are __0 Songs__ in the Queue**`)
-      .setThumbnail(guild.iconURL({
-        dynamic: true
-      })),
-      new MessageEmbed()
-      .setColor(ee.color)
-      .setFooter({ text: guild.name, iconURL: guild.iconURL({
-        dynamic: true
-      }) })
-      .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
-      .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
-      .setDescription(`> *I support ▶️ Youtube, 🎵 Spotify, ☁️ Soundcloud and direct MP3 Links!*`)
-    ]
+        new MessageEmbed()
+            .setColor(ee.color)
+            .setTitle(`📜 Queue of __${guild.name}__`)
+            .setDescription(`**Currently there are __0 Songs__ in the Queue**`)
+            .setThumbnail(guild.iconURL({ dynamic: true })),
+        new MessageEmbed()
+            .setColor(ee.color)
+            .setFooter({ text: guild.name, iconURL: guild.iconURL({ dynamic: true }) })
+            .setImage(finalBanner) // <-- Uses custom server banner if set, otherwise default!
+            .setTitle('Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!')
+            .setDescription('> *I support ▶ Youtube, 🎵 Spotify, ☁ Soundcloud and direct MP3 Links!*')
+    ];
     let newQueue = client.distube.getQueue(guild.id);
     var djs = client.settings.get(guild.id, `djroles`);
     if(!djs || !Array.isArray(djs)) djs = [];
