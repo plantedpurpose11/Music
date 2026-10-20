@@ -33,15 +33,18 @@ module.exports = {
         .setThumbnail(message.guild.iconURL({
           dynamic: true
         })),
-        new MessageEmbed()
-        .setColor(ee.color)
-        .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL({
-          dynamic: true
-        }) })
-        .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
-        .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
-        .setDescription(`> *I support <:yt:1506798187422421153> Youtube, <:soundcloud:1506798096229732382> Soundcloud, 🎧 Bandcamp, and direct MP3 Links!*`)
-      ]
+        // Add these lines right before or inside your embed definition to fetch the server banner:
+const defaultBanner = 'https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png';
+const customBanner = client.settings.get(message.guild.id, 'musicBanner');
+const finalBanner = customBanner || defaultBanner;
+
+// Then update your embed's setImage line:
+new MessageEmbed()
+    .setColor(ee.color)
+    .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL({ dynamic: true }) })
+    .setImage(finalBanner) // <-- Uses custom server banner if set, otherwise your forge-music-banner.png
+    .setTitle('Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!')
+    .setDescription(`> *I support <:yt:150679818742241153> Youtube, <:soundcloud:1506798096229732382> Soundcloud, 🎧 Bandcamp, and direct MP3 Links!*`)
       var Emojis = [
         `0️⃣`,
         `1️⃣`,
