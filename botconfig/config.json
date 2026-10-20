@@ -3,9 +3,9 @@
   "prefix": "~",
   "lavalink": {
     "enabled": true,
-    "host": "us-node-2.altvr.in",
-    "port": 2088,
-    "password": "youshallnotpass",
+    "host": "ashburn.keritcloud.online",
+    "port": 10028,
+    "password": "58adbcf1ca3c3e6c",
     "secure": false
   },
   "spotify_api": {
