@@ -205,6 +205,7 @@ module.exports = {
   getOrCreatePlayer,
   waitForPlayerReady,
   searchTrack,
+  rankSearchTracks,
   isPlaying,
   queueLength,
   currentTrack,

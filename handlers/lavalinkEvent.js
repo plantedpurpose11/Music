@@ -1,5 +1,6 @@
 const { musicBanner } = require('./musicBanner');
 const { replyWithLyrics } = require('./lyrics');
+const createPlaybackRecovery = require('./playbackRecovery');
 console.log(`Lavalink Event Handler loaded`.yellow);
 const config = require(`../botconfig/config.json`);
 const settings = require(`../botconfig/settings.json`);
@@ -47,14 +48,20 @@ module.exports = (client) => {
       const channel = client.channels.cache.get(player.textChannelId);
       if (!channel?.send) return;
       channel.send({
-        content: `❌ Playback failed: ${detail}`.slice(0, 1900),
+        content: `❌ Playback failed: ${detail.split(/\r?\n/)[0]}`.slice(0, 450),
         allowedMentions: { parse: [] },
       }).then(message => messageCleanup(message, client)).catch(() => {});
     };
+    const recovery = createPlaybackRecovery(client, reportPlaybackError);
 
     client.manager?.on('trackError', (player, track, payload) => {
       const reason = payload?.exception?.message || payload?.message || 'Unknown source error';
-      reportPlaybackError(player, `The Lavalink source could not play ${trackTitle(track)}. ${reason}`);
+      if (recovery.canRecover(track)) console.error(`[Lavalink Source] guild=${player.guildId}: ${reason}`);
+      if (recovery.canRecover(track) && !player.queue?.tracks?.length) {
+        return; // Retry after the failed last track ends.
+      }
+      const summary = recovery.canRecover(track) ? 'YouTube could not supply an audio stream. Continuing with the queued songs.' : reason;
+      reportPlaybackError(player, `The Lavalink source could not play ${trackTitle(track)}. ${summary}`);
     });
     client.manager?.on('trackStuck', (player, track) => {
       reportPlaybackError(player, `The Lavalink source stopped supplying audio for ${trackTitle(track)}.`);
@@ -335,10 +342,11 @@ module.exports = (client) => {
     });
 
     // Queue end event
-    client.manager?.on("queueEnd", async (player) => {
+    client.manager?.on("queueEnd", async (player, track, payload) => {
       try {
+        if (payload?.reason === 'loadFailed' && await recovery.recover(player, track)) return;
         // Handle autoplay
-        const autoplay = player.get("autoplay");
+        const autoplay = payload?.reason !== 'loadFailed' && player.get("autoplay");
         if (autoplay) {
           const cur = currentTrack(player) || player.queue.previous;
           if (cur) {
