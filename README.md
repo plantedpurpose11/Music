@@ -38,7 +38,7 @@
 
 > 🖖 [**Repl.it Fork**](https://replit.com/@OxyTomato/Musicium)
 > 
-> - ` 0. ` have **node.js v16.6 or higher**
+> - ` 0. ` have **Node.js 22.12 or higher in the Node 22 release line**
 > 
 > - ` 1. ` have **ffmpeg and at least 100mb Ram**
 > 
@@ -85,3 +85,19 @@
 
 > If consider using this Bot, make sure to credit me!
 
+
+## Prefix music features (Discord.js v13)
+
+Use your server's configured prefix (default `~`) in a text channel outside the music request panel:
+
+- `~nodes`: lists every configured Lavalink node, its connection status, and how many of this bot's servers it is actively playing for. Paused players are excluded.
+- `~setbanner` with an image attached: administrators can save a PNG, JPEG, GIF, or WebP up to 5 MiB. The image bytes are kept in the existing Enmap settings database, so Discord attachment URL expiration does not affect saved banners. Keep `databases/` on persistent storage and include it in backups. The banner appears on the idle panel and new `~setupmusic #channel` panels. `~setbanner none` resets it; image URLs remain supported but depend on the external host.
+- `~lyrics [song name]`: gets lyrics from the player's Lavalink node. The panel and now-playing **Lyrics** buttons show the current track's lyrics privately to listeners in the bot's voice channel. Long lyrics include a text attachment.
+
+Lyrics require a compatible plugin on Lavalink, such as LavaLyrics with a configured lyrics provider (LavaSrc or java-lyrics-plugin). Missing lyrics or unavailable plugins produce a helpful message. No external lyrics API key is used by the bot.
+
+Song searches prefer original recordings over unsolicited karaoke, remix, cover, instrumental, and similar versions. Explicit requests such as “song remix” retain those versions. Direct links and playlist order are preserved.
+
+### Feature checks
+
+With Node 22 and dependencies installed, run `node --test tests/music-features.test.js`. These tests use synthetic Discord/Lavalink responses and temporary database fixtures.
