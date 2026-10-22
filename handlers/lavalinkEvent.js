@@ -37,6 +37,32 @@ module.exports = (client) => {
       }
     };
 
+    // Report stream/voice failures instead of leaving a silent now-playing panel.
+    const lastPlaybackNotice = new WeakMap();
+    const reportPlaybackError = (player, detail) => {
+      console.error(`[Lavalink Playback] guild=${player.guildId} node=${player.node?.id || 'unknown'}: ${detail}`);
+      const now = Date.now();
+      if (now - (lastPlaybackNotice.get(player) || 0) < 10000) return;
+      lastPlaybackNotice.set(player, now);
+      const channel = client.channels.cache.get(player.textChannelId);
+      if (!channel?.send) return;
+      channel.send({
+        content: `❌ Playback failed: ${detail}`.slice(0, 1900),
+        allowedMentions: { parse: [] },
+      }).then(message => messageCleanup(message, client)).catch(() => {});
+    };
+
+    client.manager?.on('trackError', (player, track, payload) => {
+      const reason = payload?.exception?.message || payload?.message || 'Unknown source error';
+      reportPlaybackError(player, `The Lavalink source could not play ${trackTitle(track)}. ${reason}`);
+    });
+    client.manager?.on('trackStuck', (player, track) => {
+      reportPlaybackError(player, `The Lavalink source stopped supplying audio for ${trackTitle(track)}.`);
+    });
+    client.manager?.on('playerSocketClosed', (player, payload) => {
+      reportPlaybackError(player, `Discord voice connection closed (code ${payload.code}). ${payload.reason || ''}`);
+    });
+
     /**
      * IDLE CHECK - Leave voice channel when bot is alone
      * Only runs after music has been playing for 30+ seconds
@@ -162,6 +188,16 @@ module.exports = (client) => {
 
     // Track start event - send now playing message
     client.manager?.on("trackStart", async (player, track) => {
+      const voice = client.guilds.cache.get(player.guildId)?.members.me?.voice;
+      console.log(`[Lavalink Playback] guild=${player.guildId} node=${player.node?.id || 'unknown'} connected=${player.connected} volume=${player.volume} serverMute=${voice?.serverMute === true} selfMute=${voice?.selfMute === true} suppressed=${voice?.suppress === true}`);
+      if (voice?.serverMute || voice?.selfMute) {
+        reportPlaybackError(player, 'Discord has muted the bot. Unmute it in the voice channel to hear music.');
+      } else if (voice?.suppress) {
+        reportPlaybackError(player, 'The bot is a Stage audience member. Invite it to speak to hear music.');
+      } else if (player.volume === 0) {
+        const prefix = client.settings.get(player.guildId, 'prefix');
+        reportPlaybackError(player, `The player volume is 0. Use ${prefix}volume 50 in a command channel.`);
+      }
       try {
         const guild = client.guilds.cache.get(player.guildId);
         if (guild && guild.members.me && guild.members.me.voice && !guild.members.me.voice.deaf)

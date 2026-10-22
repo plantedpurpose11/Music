@@ -92,14 +92,15 @@ const manager = new LavalinkManager({
   }
 });
 
-manager
-  .on("ready", (node) => {
+manager.nodeManager
+  .on("connect", (node) => {
     console.log(`Lavalink node connected: ${node.id}`.green);
   })
   .on("error", (node, error) => {
     console.log(`Lavalink node error: ${error.message}`.red);
-  })
-  .on("playerCreate", (player) => {
+  });
+
+manager.on("playerCreate", (player) => {
     console.log(`Player created for guild: ${player.guildId}`.cyan);
   });
 
@@ -114,9 +115,12 @@ client.on("ready", () => {
 });
 
 // Forward voice state updates to Lavalink manager
+const forwardVoicePacket = require('./handlers/lavalinkVoice')(client);
 client.on("raw", (d) => {
   if (d.t === "VOICE_STATE_UPDATE" || d.t === "VOICE_SERVER_UPDATE") {
-    client.manager?.sendRawData(d);
+    forwardVoicePacket(d).catch(error => {
+      console.error(`Lavalink voice update failed: ${error.message}`);
+    });
   }
 });
 
