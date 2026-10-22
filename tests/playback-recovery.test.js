@@ -72,7 +72,9 @@ test('each backup provider is tried once across repeated stream failures', async
   assert.equal(queries.length, 2);
   assert.equal(f.played.length, 2);
   assert.equal(f.notices.length, 1);
-  assert.match(f.notices[0], /no suitable backup/);
+  assert.match(f.notices[0], /Bandcamp backup could not supply audio/);
+  assert.match(f.notices[0], /No playable matching backup/);
+  assert.doesNotMatch(f.notices[0], /YouTube/);
 });
 
 test('provider errors are bounded and do not trigger another YouTube lookup', async () => {
@@ -82,6 +84,25 @@ test('provider errors are bounded and do not trigger another YouTube lookup', as
   assert.equal(queries.length, 2);
   assert.equal(f.played.length, 0);
   assert.equal(f.notices.length, 1);
+  assert.match(f.notices[0], /Backup lookup failed on SoundCloud and Bandcamp/);
+  assert.match(f.notices[0], /Contact your Lavalink host/);
+});
+
+test('Lavalink error results are distinguished from an empty backup search', async () => {
+  const f = fixture(async ({ query }) => query.startsWith('scsearch:')
+    ? { loadType: 'error', exception: { message: 'Synthetic SoundCloud error' }, tracks: [] }
+    : { loadType: 'empty', tracks: [] });
+  assert.equal(await f.recovery.recover(f.player, song()), false);
+  assert.match(f.notices[0], /Backup lookup failed on SoundCloud\./);
+  assert.doesNotMatch(f.notices[0], /failed on SoundCloud and Bandcamp/);
+});
+
+test('backup start failures are not reported as lookup failures', async () => {
+  const f = fixture(async ({ query }) => ({ tracks: [song(query.startsWith('scsearch:') ? 'soundcloud' : 'bandcamp')] }));
+  f.player.play = async () => { throw new Error('Synthetic playback transport error'); };
+  assert.equal(await f.recovery.recover(f.player, song()), false);
+  assert.match(f.notices[0], /Backup playback could not start on SoundCloud and Bandcamp/);
+  assert.doesNotMatch(f.notices[0], /Backup lookup failed/);
 });
 
 for (const action of ['stop', 'new request']) {
@@ -162,9 +183,9 @@ function integration(t, queued = [], search) {
   try { require('../handlers/lavalinkEvent')(client); } finally { global.setInterval = interval; }
   t.after(() => { if (oldIdle === undefined) delete global.idleCheckInterval; else global.idleCheckInterval = oldIdle; });
   const failed = player.queue.current;
-  const fail = async () => {
-    await node.trackError(player, failed, { exception: { message: '(yts.version: 1.18.1) All clients failed to load the item.\nClient [TVHTML5] failed\n\tat Java.trace()' } });
-    await node.trackEnd(player, failed, { type: 'TrackEndEvent', reason: 'loadFailed' });
+  const fail = async (track = failed) => {
+    await node.trackError(player, track, { exception: { message: '(yts.version: 1.18.1) All clients failed to load the item.\nClient [TVHTML5] failed\n\tat Java.trace()' } });
+    await node.trackEnd(player, track, { type: 'TrackEndEvent', reason: 'loadFailed' });
     await Promise.all(tasks);
   };
   return { player, manager, node, failed, fail, notices, updates };
@@ -203,8 +224,22 @@ test('exhausted backups do not restart YouTube autoplay in a failure loop', asyn
   assert.equal(queries.length, 2);
   assert.ok(queries.every(query => /^(scsearch|bcsearch):/.test(query)));
   assert.equal(f.notices.length, 1);
-  assert.match(f.notices[0].content, /Check the YouTube plugin/);
+  assert.match(f.notices[0].content, /Contact your Lavalink host/);
+  assert.doesNotMatch(f.notices[0].content, /Backup lookup failed/);
   assert.equal(f.updates.length, 0);
+});
+
+test('a failed backup with queued songs names its own provider', async t => {
+  const next = song('http', 'Next queued song');
+  const f = integration(t, [next], () => assert.fail('must not search'));
+  const failed = song('soundcloud');
+  failed.userData.musicFallback = { original: song().info, attempted: ['soundcloud'] };
+  f.player.queue.current = failed;
+  await f.fail(failed);
+  assert.equal(f.player.queue.current, next);
+  assert.equal(f.notices.length, 1);
+  assert.match(f.notices[0].content, /SoundCloud could not supply an audio stream/);
+  assert.doesNotMatch(f.notices[0].content, /YouTube/);
 });
 
 test('a fast failure of the backup is serialized after the in-flight attempt', async () => {

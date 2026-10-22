@@ -60,7 +60,7 @@ module.exports = (client) => {
       if (recovery.canRecover(track) && !player.queue?.tracks?.length) {
         return; // Retry after the failed last track ends.
       }
-      const summary = recovery.canRecover(track) ? 'YouTube could not supply an audio stream. Continuing with the queued songs.' : reason;
+      const summary = recovery.canRecover(track) ? `${recovery.sourceLabel(track)} could not supply an audio stream. Continuing with the queued songs.` : reason;
       reportPlaybackError(player, `The Lavalink source could not play ${trackTitle(track)}. ${summary}`);
     });
     client.manager?.on('trackStuck', (player, track) => {
