@@ -65,7 +65,7 @@ module.exports = async (client, message) => {
         
         // Start playing if nothing is playing
         if (!player.playing && !player.paused) {
-          player.play();
+          await player.play();
         }
         
         // Panel updates automatically via trackStart event — no extra messages needed

@@ -100,4 +100,6 @@ Song searches prefer original recordings over unsolicited karaoke, remix, cover,
 
 ### Feature checks
 
-With Node 22 and dependencies installed, run `node --test tests/music-features.test.js`. These tests use synthetic Discord/Lavalink responses and temporary database fixtures.
+With Node 22 and dependencies installed, run `node --test tests/*.test.js`. These tests use synthetic Discord/Lavalink responses and temporary database fixtures.
+
+Voice connections wait for Lavalink's `connected` acknowledgement, and handle Discord's voice-state and voice-server packets in either arrival order. Failed connections stop the request instead of queueing into an unready player. Playback source errors and Discord voice closures are reported in the request channel; the bot console also logs connection, mute/suppression, and volume status without dumping voice tokens.

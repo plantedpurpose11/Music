@@ -13,54 +13,47 @@ function getPlayer(client, guildId) {
 /**
  * Wait for player to be ready (voice connection established)
  */
-async function waitForPlayerReady(player, maxWaitTime = 5000) {
-  const startTime = Date.now();
-  while (Date.now() - startTime < maxWaitTime) {
-    if (player.connected && player.state !== undefined) {
-      console.log(`[PlayerHelper] Player ready! connected: ${player.connected}, state: ${player.state}`);
-      return true;
-    }
-    console.log(`[PlayerHelper] Waiting for player to be ready... connected: ${player.connected}, state: ${player.state}`);
-    await new Promise(resolve => setTimeout(resolve, 200));
+async function waitForPlayerReady(player, maxWaitTime = 15000) {
+  const deadline = Date.now() + maxWaitTime;
+  // lavalink-client updates connected from Lavalink's playerUpdate packets.
+  // It does not expose a player.state property.
+  while (!player.connected && Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, Math.min(200, deadline - Date.now())));
   }
-  console.warn(`[PlayerHelper] Timeout waiting for player to be ready. connected: ${player.connected}, state: ${player.state}`);
-  return false;
+  return player.connected === true;
 }
 
 /**
- * Get or create a player for the guild + voice channel.
- * Returns the player (already connected to voice).
+ * Get or create a player and wait for Lavalink to establish its voice connection.
  */
 async function getOrCreatePlayer(client, guildId, voiceChannelId, textChannelId) {
   let player = getPlayer(client, guildId);
-  if (!player) {
-    console.log(`[PlayerHelper] Creating new player for guild: ${guildId}, voice: ${voiceChannelId}`);
-    player = await client.manager.createPlayer({
+  const created = !player;
+  if (created) {
+    player = client.manager.createPlayer({
       guildId,
       voiceChannelId,
       textChannelId,
       selfDeaf: true,
       selfMute: false,
     });
-    console.log(`[PlayerHelper] Player created, now connecting...`);
-    try {
-      await player.connect();
-      console.log(`[PlayerHelper] player.connect() returned`);
-      console.log(`[PlayerHelper] Immediate state - connected: ${player.connected}, state: ${player.state}`);
-      
-      // Wait for the player to be fully ready
-      const isReady = await waitForPlayerReady(player);
-      if (!isReady) {
-        console.warn(`[PlayerHelper] Player may not be fully ready, but proceeding anyway`);
-      }
-    } catch (e) {
-      console.error(`[PlayerHelper] Failed to connect player:`, e);
-      throw e;
-    }
-  } else {
-    console.log(`[PlayerHelper] Player already exists for guild: ${guildId}`);
   }
-  return player;
+  if (textChannelId) player.textChannelId = textChannelId;
+  if (player.connected) return player;
+
+  try {
+    console.log(`[PlayerHelper] Connecting voice for guild ${guildId} on node ${player.node?.id || 'unknown'}`);
+    await player.connect();
+    if (!await waitForPlayerReady(player)) {
+      throw new Error('Lavalink did not establish the voice connection. Check the Lavalink server console and try again.');
+    }
+    console.log(`[PlayerHelper] Lavalink voice connected for guild ${guildId}`);
+    return player;
+  } catch (error) {
+    // A failed new connection must not leave a stale player behind for later requests.
+    if (created) await player.destroy().catch(() => {});
+    throw error;
+  }
 }
 
 /**
@@ -210,6 +203,7 @@ module.exports = {
   SOURCES,
   getPlayer,
   getOrCreatePlayer,
+  waitForPlayerReady,
   searchTrack,
   isPlaying,
   queueLength,
