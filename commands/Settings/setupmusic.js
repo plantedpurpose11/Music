@@ -1,3 +1,4 @@
+const { musicBanner } = require('../../handlers/musicBanner');
 const {
   MessageEmbed, MessageActionRow, MessageButton, MessageSelectMenu
 } = require(`discord.js`);
@@ -22,10 +23,7 @@ module.exports = {
       const { member } = message;
       const { guild } = member;
 
-      // 1. Fetch custom banner or fallback to default
-      const defaultBanner = 'https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png';
-      const customBanner = client.settings.get(message.guild.id, 'musicBanner');
-      const finalBanner = customBanner || defaultBanner;
+      const banner = musicBanner(client, guild.id);
 
       // 2. Declare all embeds inside the array
       var embeds = [
@@ -39,7 +37,7 @@ module.exports = {
         new MessageEmbed()
           .setColor(ee.color)
           .setFooter({ text: message.guild.name, iconURL: message.guild.iconURL({ dynamic: true }) })
-          .setImage(finalBanner)
+          .setImage(banner.image)
           .setTitle('Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!')
           .setDescription(`> *I support <:yt:150679818742241153> Youtube, <:soundcloud:1506798096229732382> Soundcloud, 🎧 Bandcamp, and direct MP3 Links!*`)
       ];
@@ -84,13 +82,14 @@ module.exports = {
       let channel = message.mentions.channels.first();
       if (!channel) return message.reply(`${client.allEmojis.x} **You forgot to ping a Text-Channel!**`);
 
-      // send the data in the channel
-      channel.send({
-        embeds,
-        components
-      }).then(msg => {
-        client.settings.set(message.guild.id, channel.id, `music.channel`);
-        client.settings.set(message.guild.id, msg.id, `music.message`);
-        client.settings.set(message.guild.id, msg.createdTimestamp, `music.panelTime`);
-        // send a success message
-        return message.reply(`${client.allEmojis.check_mark} **Successfully set up the Music System in:** <#
+      const msg = await channel.send({ files: banner.files, embeds, components });
+      client.settings.set(guild.id, channel.id, 'music.channel');
+      client.settings.set(guild.id, msg.id, 'music.message');
+      client.settings.set(guild.id, msg.createdTimestamp, 'music.panelTime');
+      return message.reply(`${client.allEmojis.check_mark} **Successfully set up the Music System in:** <#${channel.id}>`);
+    } catch (error) {
+      console.error('Music setup failed:', error.message);
+      return message.reply('Could not set up the music panel. Please check my channel permissions and try again.');
+    }
+  },
+};

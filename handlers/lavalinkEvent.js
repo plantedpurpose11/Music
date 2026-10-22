@@ -1,3 +1,5 @@
+const { musicBanner } = require('./musicBanner');
+const { replyWithLyrics } = require('./lyrics');
 console.log(`Lavalink Event Handler loaded`.yellow);
 const config = require(`../botconfig/config.json`);
 const settings = require(`../botconfig/settings.json`);
@@ -213,6 +215,7 @@ module.exports = (client) => {
         }, 10000)
 
         collector.on('collect', async i => {
+          if (i.customId === '10') return replyWithLyrics(i, player).catch(error => console.error('Lyrics reply failed:', error.message));
           const cur = currentTrack(player);
           if(i.customId != `10` && check_if_dj(client, i.member, cur)) {
             return i.reply({embeds: [new MessageEmbed()
@@ -427,7 +430,7 @@ module.exports = (client) => {
             
             if (addedCount === 0) {
               return interaction.editReply({
-                content: `❌ Couldn't find any songs for **${playlistValue}**. Try \`/music play\` instead.`,
+                content: `❌ Couldn't find any songs for **${playlistValue}**. Try the play prefix command in another channel instead.`,
                 ephemeral: true
               });
             }
@@ -462,6 +465,8 @@ module.exports = (client) => {
             });
           }
           
+          if (['10', 'Lyrics'].includes(interaction.customId)) return await replyWithLyrics(interaction, player);
+
           switch (interaction.customId) {
             case '1': // Skip
               await player.skip();
@@ -535,6 +540,8 @@ module.exports = (client) => {
         const player = client.manager?.players?.get(guildId);
         const queue = player?.queue;
         
+        const banner = musicBanner(client, guildId);
+
         // Build embed with current playing info
         var embeds = [
           new MessageEmbed()
@@ -545,7 +552,7 @@ module.exports = (client) => {
           new MessageEmbed()
             .setColor(ee.color)
             .setFooter({ text: guild.name, iconURL: guild.iconURL({ dynamic: true }) })
-            .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
+            .setImage(banner.image)
             .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
             .setDescription(`> *I support <:yt:1506798187422421153> Youtube, <:soundcloud:1506798096229732382> Soundcloud, 🎧 Bandcamp, and direct MP3 Links!*`)
         ];
@@ -582,6 +589,7 @@ module.exports = (client) => {
               new MessageButton().setStyle('SUCCESS').setCustomId('7').setEmoji('🔂').setLabel('Queue'),
               new MessageButton().setStyle('PRIMARY').setCustomId('8').setEmoji('⏩').setLabel('+10 Sec'),
               new MessageButton().setStyle('PRIMARY').setCustomId('9').setEmoji('⏪').setLabel('-10 Sec'),
+              new MessageButton().setStyle('PRIMARY').setCustomId('10').setEmoji('📝').setLabel('Lyrics'),
             ]),
           ];
         } else {
@@ -597,7 +605,7 @@ module.exports = (client) => {
         }
         
         channel.messages.fetch(messageId).then(msg => {
-          msg.edit({ embeds, components }).catch(() => {});
+          msg.edit({ embeds, components, attachments: [], files: (player && queue && queue.current) ? [] : banner.files }).catch(() => {});
         }).catch(() => {});
         
       } catch (e) {
@@ -626,6 +634,8 @@ module.exports = (client) => {
         const player = client.manager?.players?.get(guildId);
         const hasQueue = player && player.queue && player.queue.tracks && player.queue.tracks.length > 0;
         
+        const banner = musicBanner(client, guildId);
+
         // Idle embeds (same as initial setupmusic panel)
         var embeds = [
           new MessageEmbed()
@@ -636,7 +646,7 @@ module.exports = (client) => {
           new MessageEmbed()
             .setColor(ee.color)
             .setFooter({ text: guild.name, iconURL: guild.iconURL({ dynamic: true }) })
-            .setImage(`https://raw.githubusercontent.com/plantedpurpose11/Music/main/assets/forge-music-banner.png`)
+            .setImage(banner.image)
             .setTitle(`Start Listening to Music, by connecting to a Voice Channel and sending either the **SONG LINK** or **SONG NAME** in this Channel!`)
             .setDescription(`> *I support <:yt:1506798187422421153> Youtube, <:soundcloud:1506798096229732382> Soundcloud, 🎧 Bandcamp, and direct MP3 Links!*`)
         ];
@@ -670,7 +680,7 @@ module.exports = (client) => {
           ];
         
         channel.messages.fetch(messageId).then(msg => {
-          msg.edit({ embeds, components }).catch(() => {});
+          msg.edit({ embeds, components, attachments: [], files: banner.files }).catch(() => {});
         }).catch(() => {});
         
       } catch (e) {
@@ -729,7 +739,7 @@ module.exports = (client) => {
       let queueloop = new MessageButton().setStyle('SUCCESS').setCustomId('7').setEmoji('🔁').setLabel(`Queue`)
       let forward = new MessageButton().setStyle('PRIMARY').setCustomId('8').setEmoji('⏩').setLabel(`+10 Sec`)
       let rewind = new MessageButton().setStyle('PRIMARY').setCustomId('9').setEmoji('⏪').setLabel(`-10 Sec`)
-      let lyrics = new MessageButton().setStyle('PRIMARY').setCustomId('10').setEmoji('🎤').setLabel(`Lyrics`).setDisabled();
+      let lyrics = new MessageButton().setStyle('PRIMARY').setCustomId('10').setEmoji('🎤').setLabel(`Lyrics`);
 
       if (!player.playing) {
         pause = pause.setStyle('SUCCESS').setEmoji('▶️').setLabel(`Resume`)
