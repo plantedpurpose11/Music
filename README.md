@@ -91,6 +91,7 @@
 Use your server's configured prefix (default `~`) in a text channel outside the music request panel:
 
 - `~nodes`: lists every configured Lavalink node, its connection status, and how many of this bot's servers it is actively playing for. Paused players are excluded.
+- `~setpfp` with an image attached: administrators can change the bot's avatar for the current server. Supports PNG, JPEG, GIF, or WebP up to 5 MiB; the bot's global avatar and other servers are unaffected. Success is reported after Discord returns a server avatar.
 - `~setbanner` with an image attached: administrators can save a PNG, JPEG, GIF, or WebP up to 5 MiB. The image bytes are kept in the existing Enmap settings database, so Discord attachment URL expiration does not affect saved banners. Keep `databases/` on persistent storage and include it in backups. The banner appears on the idle panel and new `~setupmusic #channel` panels. `~setbanner none` resets it; image URLs remain supported but depend on the external host.
 - `~lyrics [song name]`: gets lyrics from the player's Lavalink node. The panel and now-playing **Lyrics** buttons show the current track's lyrics privately to listeners in the bot's voice channel. Long lyrics include a text attachment.
 
