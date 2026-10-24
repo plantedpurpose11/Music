@@ -12,7 +12,7 @@ function imageType(bytes) {
   return null;
 }
 
-async function storeBanner(client, guildId, attachment) {
+async function downloadDiscordImage(attachment) {
   if (attachment.size > MAX_BANNER_BYTES) throw new Error('Please upload an image no larger than 5 MiB.');
   const url = new URL(attachment.url);
   if (url.protocol !== 'https:' || !['cdn.discordapp.com', 'media.discordapp.net'].includes(url.hostname)) {
@@ -43,8 +43,13 @@ async function storeBanner(client, guildId, attachment) {
   });
   const type = imageType(bytes);
   if (!type) throw new Error('Please upload a PNG, JPEG, GIF, or WebP image.');
+  return { type, data: bytes.toString('base64') };
+}
+
+async function storeBanner(client, guildId, attachment) {
+  const image = await downloadDiscordImage(attachment);
   // Persist the image itself in Enmap, not Discord's expiring attachment URL.
-  client.settings.set(guildId, { type, data: bytes.toString('base64') }, 'musicBanner');
+  client.settings.set(guildId, image, 'musicBanner');
 }
 
 function musicBanner(client, guildId) {
@@ -69,4 +74,4 @@ async function refreshMusicBanner(client, guildId) {
   await message.edit({ embeds, attachments: [], files: banner.files });
 }
 
-module.exports = { storeBanner, musicBanner, refreshMusicBanner };
+module.exports = { storeBanner, musicBanner, refreshMusicBanner, downloadDiscordImage };
